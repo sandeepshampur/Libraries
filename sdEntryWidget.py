@@ -1,3 +1,4 @@
+#
 # Completed 20-December-2021
 #
 # Fix 		  : 09-Jan-2022 : 1. Fixed validation where empty was not allowed though the flag was set
@@ -10,8 +11,11 @@
 #							  2. Added function to get size of widget "GetSize()"
 #							  3. Added functions "SetMaxChars()", "GetBg()", "GetPlaceInfo()", "Forget()", "Place()", "GetName()", "SetName()", "Bind()"
 #
+# Fix		  : 14-Jul-2024 : Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()"
+#
 
 import threading as objLibThreading
+import tkinter as objLibTk
 from tkinter import StringVar as objLibStringVar
 from tkinter import Entry as objLibEntry
 from re import compile as objRECompile
@@ -63,7 +67,7 @@ class clEntryWidget:
 		if len(self.font) != 0:
 			self.Widget.configure(font=self.font)
 		# End of if
-		self.vWidget.set(self.value)
+		self.Widget.insert(0, self.value)
 		self.Widget["state"] = self.state
 		self.Widget["validatecommand"] = (self.Widget.register(self.HandlerValidate), "%d", "%P")
 	# End of Display()
@@ -101,7 +105,7 @@ class clEntryWidget:
 					self.status[1] = "".join(["Character \"", strValue[-1:], "\" is not allowed"])
 					break
 				# End of if
-				
+
 				# Check for minimum
 				try:
 					iValue = int(strValue)
@@ -114,14 +118,14 @@ class clEntryWidget:
 					break
 					# End of if
 				# End of if
-				
+
 				# Check for maximum
 				if (self.iMax != -1) and (iValue > self.iMax):
 					self.status[0] = "Fatal"
 					self.status[1] = "".join(["Value should not be greater than ", str(self.iMax)])
 					break
 					# End of if
-				# End of if				
+				# End of if
 			# End of if
 
 			cFg = self.fg
@@ -230,13 +234,14 @@ class clEntryWidget:
 
 	def Reset(self):
 		self.Widget.configure(foreground=self.fg, background=self.bg, disabledforeground=self.dfg, disabledbackground=self.dbg)
-		self.vWidget.set(self.value)
+		self.Widget.delete(0, objLibTk.END)
+		self.Widget.insert(0, self.value)
 		self.Widget["state"] = self.state
 		self.WidgetTT.SetMessage(self.tooltip)
 	# End of Reset()
 
 	def SetBg(self, strValue):
-		self.Widget.configure(background=strValue)		
+		self.Widget.configure(background=strValue)
 	# End of SetBg()
 
 	def SetCallbackTrigger(self, bTriggerCallback):
@@ -255,7 +260,7 @@ class clEntryWidget:
 	def SetFocus(self):
 		self.Widget.focus()
 	# End of SetFocus()
-	
+
 	def SetMax(self, iMax):
 		self.iMax = iMax
 	# End of SetMax()
@@ -299,6 +304,6 @@ class clEntryWidget:
 	# End of SetTooltip()
 
 	def SetValue(self, strValue):
-		self.vWidget.set(strValue)
+		self.Widget.insert(0, self.value)
 	# End of Set()
 # End of class clEntryWidget
