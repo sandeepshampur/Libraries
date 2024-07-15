@@ -1,11 +1,14 @@
 #
 # Completed : 20-December-2021
 #
-# Fix : 22-Mar-2022 : Fixed code in "Dump()" where log file was being overwritten though size was within limit
+# Fix 		  : 22-Mar-2022 : Fixed code in "Dump()" where log file was being overwritten though size was within limit
+#
+# Enhancement : 15-Jul-2024 : Added default values to function parameters
 #
 
 import datetime as objLibDateTime
 import os as objLibOS
+from os.path import join as objLibOSPathJoin
 import queue as objLibQueue
 from tempfile import gettempdir as objLibTempDir
 import threading as objLibThreading
@@ -13,20 +16,17 @@ from time import time as objLibCurrentTime
 from traceback import extract_stack as objLibTBGetStack
 
 class clLogger:
-	def __init__(self, iLogLevel=0, iFileSize=67108864, strPath="", strFileName=""):
+	def __init__(self, iLogLevel=0, iFileSize=-1, strPath="", strFileName=""):
 		self.strPath = ""
 		self.strFileName = ""
 		self.strFilePath = ""
-		self.iFileSize = int(67108864)
-				
+
 		# Log level
 		self.LogLevel = int(iLogLevel)
-		
+
 		# File size
-		if int(iFileSize) > 0:
-			self.iFileSize = int(iFileSize)
-		# End of if
-		
+		self.SetFileSize(iFileSize)
+
 		# Path
 		self.SetPath(strPath)
 		
@@ -106,29 +106,33 @@ class clLogger:
 		# End of if
 	# End of Log()
 
-	def SetFileName(self, strFile):
+	def SetFileName(self, strFile=""):
 		if len(strFile) != 0:
 			self.strFileName = strFile
 		else:
 			self.strFileName = "DebugLogs.txt"
 		# End of if
-		
+
 		self.SetFullPath()
-	# End of SetFileName()	
-	
+	# End of SetFileName()
+
+	def SetFileSize(self, iFileSize=-1):
+		if iFileSize == -1:
+			self.iFileSize = int(67108864)
+		else:
+			self.iFileSize = int(iFileSize)
+		# End of if
+	# End of SetFileSize()
+
 	def SetFullPath(self):
-		self.strFilePath = "".join([self.strPath, self.strFileName])		
+		self.strFilePath = objLibOSPathJoin(self.strPath, self.strFileName)
 	# End of SetFullPath()
 	
-	def SetLevel(self, iLogLevel):
+	def SetLevel(self, iLogLevel=0):
 		self.LogLevel = int(iLogLevel)
 	# End of SetLevel()
 	
-	def SetFileSize(self, iFileSize):
-		self.iFileSize = int(iFileSize)
-	# End of SetFileSize()
-
-	def SetPath(self, strPath):
+	def SetPath(self, strPath=""):
 		# Path
 		if (len(strPath) != 0) and objLibOS.path.isdir(strPath):
 			self.strPath = strPath
@@ -136,10 +140,9 @@ class clLogger:
 			# Temp directory
 			self.strPath = objLibTempDir()
 		# End of if
-		if self.strPath[-1:] != objLibOS.sep:
-			self.strPath = "".join([self.strPath, objLibOS.sep])
-		# End of if
-		
+
+		self.strPath = objLibOSPathJoin(self.strPath, "")
+
 		self.SetFullPath()
 	# End of SetPath()	
 
