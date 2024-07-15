@@ -5,108 +5,35 @@
 import os as objLibOS
 from os.path import isfile as objLibOSIsFile
 from os.path import join as objLibOSPathJoin
+import sdDatabase as objLibDatabase
 import sdIniParser as objLibIniParser
 import sdLogger as objLibLogger
 from tkinter import font as objLibTkFont
 from tkinter import ttk as objLibTTK
 
 class clCommon:
-	def __init__(self, strPath, dictFiles, iFontSize=10):
-		self.iFontSize = iFontSize
-		self.dictInfo = {
-			"Font": {},
-			"Functions": {},
-			"Screen": {
-				"Width": 0,
-				"Height": 0
-			},
-		}
+	def __init__(self):
+			self.dictInfo = {
+				"Font": {},
+				"Functions": {},
+				"Screen": {
+					"Width": 0,
+					"Height": 0
+				},
+			}
+	# End of __init__()
 
+	def CheckEnvironment(self):
 		# Initialise working directory
-		strPath = objLibOS.path.abspath(strPath)
+		strPath = objLibOS.path.abspath(self.dictParam["strPath"])
 		arrPath = objLibOS.path.split(strPath)
 		strPath = objLibOSPathJoin(arrPath[0], "")
 		self.strWorkingDir = strPath
 		self.dictInfo["WorkingDir"] = strPath
 
-		self.InitFunctions(dictFiles)
-	# End of __init__()
-
-	def InitFunctions(self, dictFiles):
-		'''
-		dictFiles = {
-			"INI": ["Data", "ControlPanel.ini"],
-			"Logger": ["Data", "ControlPanelLogs.txt"],
-		}
-		'''
-		if "INI" in dictFiles:
-			arrEntry = dictFiles["INI"]
-			strIniFile = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
-			objIniParser = objLibIniParser.clIniParser(strIniFile)
-			self.dictInfo["Functions"]["INI"] = objIniParser
-		# End of if
-
-		if "Logger" in dictFiles:
-			arrEntry = dictFiles["Logger"]
-			strLogPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0])
-			iLogLevel = objIniParser.GetItem("Logger", "Level")
-			if len(iLogLevel) == 0:
-				iLogLevel = 0
-			else:
-				iLogLevel = int(iLogLevel)
-			# End of if
-			iFileSize = objIniParser.GetItem("Logger", "Size")
-			if len(iFileSize) == 0:
-				iFileSize = 0
-			else:
-				iFileSize = int(iFileSize)
-			# End of if
-
-			objLogger = objLibLogger.clLogger(iLogLevel=iLogLevel, strPath=strLogPath, strFileName=arrEntry[1], iFileSize=iFileSize)
-			self.dictInfo["Functions"]["Logger"] = objLogger
-		# End of if
-
-		if "Database" in dictFiles:
-			pass
-		# End of if
-	# End of InitFunctions()
-
-	def Initialise(self, objWindow, bSetTheme=True):
-		# Screen dimensions
-		self.dictInfo["Screen"]["Width"] = objWindow.winfo_screenwidth()
-		self.dictInfo["Screen"]["Height"] = objWindow.winfo_screenheight()
-
-		# Screen ratios
-		self.fScrRatioW = float(self.dictInfo["Screen"]["Width"] / 1920)
-		self.fScrRatioH = float(self.dictInfo["Screen"]["Height"] / 1080)
-
-		# Font size
-		iMappedFontSize = round(self.iFontSize * self.fScrRatioW)
-		objFont = objLibTkFont.nametofont("TkDefaultFont")
-		objFont.config(size=iMappedFontSize)
-		objFont = objLibTkFont.nametofont("TkTextFont")
-		objFont.config(size=iMappedFontSize)
-		objFont = objLibTkFont.nametofont("TkHeadingFont")
-		objFont.config(size=iMappedFontSize)
-		self.objDefaultFont = objLibTkFont.Font(font="TkDefaultFont")
-
-		if bSetTheme:
-			self.SetTheme()
-		# End of if
-	# End of Initialise()
-
-	def CheckEnvironment(self, dictList):
-		'''
-		dictList = {
-			"Data": ["ControlPanel.ini"],
-			"Icons": ["About.xbm"],
-			"Img": ["About.png"],
-			"Sound": ["Battery.mp3"]
-		}
-		'''
 		arrError = []
-		for strDir in dictList:
-			arrFiles = dictList[strDir]
+		for strDir in self.dictParam["Environment"]:
+			arrFiles = self.dictParam["Environment"][strDir]
 
 			for strFile in arrFiles:
 				strFilePath = objLibOSPathJoin(self.strWorkingDir, strDir, strFile)
@@ -124,6 +51,42 @@ class clCommon:
 
 		return strError
 	# End of Check()
+
+	def CreateFunctions(self):
+		if "INI" in self.dictParam["Functions"]:
+			arrEntry = self.dictParam["Functions"]["INI"]
+			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
+			objIniParser = objLibIniParser.clIniParser(strPath)
+			self.dictInfo["Functions"]["INI"] = objIniParser
+		# End of if
+
+		if "Logger" in self.dictParam["Functions"]:
+			arrEntry = self.dictParam["Functions"]["Logger"]
+			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0])
+			iLogLevel = objIniParser.GetItem("Logger", "Level")
+			if len(iLogLevel) == 0:
+				iLogLevel = 0
+			else:
+				iLogLevel = int(iLogLevel)
+			# End of if
+			iFileSize = objIniParser.GetItem("Logger", "Size")
+			if len(iFileSize) == 0:
+				iFileSize = 0
+			else:
+				iFileSize = int(iFileSize)
+			# End of if
+
+			objFunction = objLibLogger.clLogger(iLogLevel=iLogLevel, strPath=strPath, strFileName=arrEntry[1], iFileSize=iFileSize)
+			self.dictInfo["Functions"]["Logger"] = objFunction
+		# End of if
+
+		if "Database" in self.dictParam["Functions"]:
+			arrEntry = self.dictParam["Functions"]["Database"]
+			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
+			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger.Log)
+			self.dictInfo["Functions"]["Logger"] = objFunction
+		# End of if
+	# End of CreateFunctions()
 
 	def GetFontInfo(self, strKey="", strText="", strFamily="", iSize=0, strWeight="normal"):
 		strValue = "Error"
@@ -182,6 +145,66 @@ class clCommon:
 	def GetWorkingDir(self):
 		return self.dictInfo["WorkingDir"]
 	# End of GetWorkingDir()
+
+	def Initialise(self, dictParam):
+		'''
+		dictParam = {
+			"Environment": {
+				"Data": ["ControlPanel.ini"],
+				"Icons": ["About.xbm"],
+				"Img": ["About.png"],
+				"Sound": ["Battery.mp3"]
+			},
+			"FontSize": 10,
+			"Functions": {
+				"INI": ["Data", "ControlPanel.ini"],
+				"Logger": ["Data", "ControlPanelLogs.txt"],
+				"Database": ["Data", "ControlPanel.db"]
+			},
+			"strPath": __file__
+		}
+		'''
+		for x in range(1):
+			self.dictParam = dictParam
+
+			# Check environment
+			strError = self.CheckEnvironment()
+			if len(strError) > 0:
+				break
+			# End of if
+
+			# Variables
+			self.dictParam = dictParam
+			self.iFontSize = dictParam["FontSize"]
+			self.CreateFunctions()
+		# End of for loop
+
+		return strError
+	# End of Initialise()
+
+	def InitialiseScreenInfo(self, objWindow, bSetTheme=True):
+		# Screen dimensions
+		self.dictInfo["Screen"]["Width"] = objWindow.winfo_screenwidth()
+		self.dictInfo["Screen"]["Height"] = objWindow.winfo_screenheight()
+
+		# Screen ratios
+		self.fScrRatioW = float(self.dictInfo["Screen"]["Width"] / 1920)
+		self.fScrRatioH = float(self.dictInfo["Screen"]["Height"] / 1080)
+
+		# Font size
+		iMappedFontSize = round(self.iFontSize * self.fScrRatioW)
+		objFont = objLibTkFont.nametofont("TkDefaultFont")
+		objFont.config(size=iMappedFontSize)
+		objFont = objLibTkFont.nametofont("TkTextFont")
+		objFont.config(size=iMappedFontSize)
+		objFont = objLibTkFont.nametofont("TkHeadingFont")
+		objFont.config(size=iMappedFontSize)
+		self.objDefaultFont = objLibTkFont.Font(font="TkDefaultFont")
+
+		if bSetTheme:
+			self.SetTheme()
+		# End of if
+	# End of Initialise()
 
 	def MapToScreenRatioH(self, iH):
 		return round(iH * self.fScrRatioH)
