@@ -1,23 +1,75 @@
 #
-# Completed: ??-July-2024
+# Completed: 15-July-2024
 #
 
 import os as objLibOS
-import tkinter as objLibTK
+from os.path import isfile as objLibOSIsFile
+from os.path import join as objLibOSPathJoin
+import sdIniParser as objLibIniParser
+import sdLogger as objLibLogger
 from tkinter import font as objLibTkFont
 from tkinter import ttk as objLibTTK
 
 class clCommon:
-	def __init__(self, iFontSize=10):
+	def __init__(self, strPath, dictFiles, iFontSize=10):
 		self.iFontSize = iFontSize
 		self.dictInfo = {
+			"Font": {},
+			"Functions": {},
 			"Screen": {
 				"Width": 0,
 				"Height": 0
 			},
-			"Font": {}
 		}
+
+		# Initialise working directory
+		strPath = objLibOS.path.abspath(strPath)
+		arrPath = objLibOS.path.split(strPath)
+		strPath = objLibOSPathJoin(arrPath[0], "")
+		self.strWorkingDir = strPath
+		self.dictInfo["WorkingDir"] = strPath
+
+		self.InitFunctions(dictFiles)
 	# End of __init__()
+
+	def InitFunctions(self, dictFiles):
+		'''
+		dictFiles = {
+			"INI": ["Data", "ControlPanel.ini"],
+			"Logger": ["Data", "ControlPanelLogs.txt"],
+		}
+		'''
+		if "INI" in dictFiles:
+			arrEntry = dictFiles["INI"]
+			strIniFile = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
+			objIniParser = objLibIniParser.clIniParser(strIniFile)
+			self.dictInfo["Functions"]["INI"] = objIniParser
+		# End of if
+
+		if "Logger" in dictFiles:
+			arrEntry = dictFiles["Logger"]
+			strLogPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0])
+			iLogLevel = objIniParser.GetItem("Logger", "Level")
+			if len(iLogLevel) == 0:
+				iLogLevel = 0
+			else:
+				iLogLevel = int(iLogLevel)
+			# End of if
+			iFileSize = objIniParser.GetItem("Logger", "Size")
+			if len(iFileSize) == 0:
+				iFileSize = 0
+			else:
+				iFileSize = int(iFileSize)
+			# End of if
+
+			objLogger = objLibLogger.clLogger(iLogLevel=iLogLevel, strPath=strLogPath, strFileName=arrEntry[1], iFileSize=iFileSize)
+			self.dictInfo["Functions"]["Logger"] = objLogger
+		# End of if
+
+		if "Database" in dictFiles:
+			pass
+		# End of if
+	# End of InitFunctions()
 
 	def Initialise(self, objWindow, bSetTheme=True):
 		# Screen dimensions
@@ -42,6 +94,36 @@ class clCommon:
 			self.SetTheme()
 		# End of if
 	# End of Initialise()
+
+	def CheckEnvironment(self, dictList):
+		'''
+		dictList = {
+			"Data": ["ControlPanel.ini"],
+			"Icons": ["About.xbm"],
+			"Img": ["About.png"],
+			"Sound": ["Battery.mp3"]
+		}
+		'''
+		arrError = []
+		for strDir in dictList:
+			arrFiles = dictList[strDir]
+
+			for strFile in arrFiles:
+				strFilePath = objLibOSPathJoin(self.strWorkingDir, strDir, strFile)
+				if not objLibOSIsFile(strFilePath):
+					strMsg = "".join([strDir, "/", strFile])
+					arrError.append(strMsg)
+				# End of if
+			# End of for loop
+		# End of for loop
+
+		if len(arrError) > 0:
+			arrError.insert(0, "Missing Files:")
+		# End of if
+		strError = "\n".join(arrError)
+
+		return strError
+	# End of Check()
 
 	def GetFontInfo(self, strKey="", strText="", strFamily="", iSize=0, strWeight="normal"):
 		strValue = "Error"
@@ -77,6 +159,16 @@ class clCommon:
 		return strValue
 	# End of ScreenInfo()
 
+	def GetFunctionInfo(self, strKey):
+		objValue = None
+
+		if strKey in self.dictInfo["Functions"]:
+			objValue = self.dictInfo["Functions"][strKey]
+		# End of if
+
+		return objValue
+	# End of GetFunctionInfo()
+
 	def GetScreenInfo(self, strKey):
 		strValue = "Error"
 
@@ -87,12 +179,8 @@ class clCommon:
 		return strValue
 	# End of ScreenInfo()
 
-	def GetWorkingDir(self, strPath):
-		strPath = objLibOS.path.abspath(strPath)
-		arrPath = objLibOS.path.split(strPath)
-		strPath = objLibOS.path.join(arrPath[0], "")
-
-		return strPath
+	def GetWorkingDir(self):
+		return self.dictInfo["WorkingDir"]
 	# End of GetWorkingDir()
 
 	def MapToScreenRatioH(self, iH):
