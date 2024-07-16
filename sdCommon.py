@@ -1,5 +1,5 @@
 #
-# Completed: 15-July-2024
+# Completed: 16-July-2024
 #
 
 import os as objLibOS
@@ -32,20 +32,22 @@ class clCommon:
 		self.dictInfo["WorkingDir"] = strPath
 
 		arrError = []
-		for strDir in self.dictParam["Environment"]:
-			arrFiles = self.dictParam["Environment"][strDir]
+		if "Environment" in self.dictParam:
+			for strDir in self.dictParam["Environment"]:
+				arrFiles = self.dictParam["Environment"][strDir]
 
-			for strFile in arrFiles:
-				strFilePath = objLibOSPathJoin(self.strWorkingDir, strDir, strFile)
-				if not objLibOSIsFile(strFilePath):
-					strMsg = "".join([strDir, "/", strFile])
-					arrError.append(strMsg)
-				# End of if
+				for strFile in arrFiles:
+					strFilePath = objLibOSPathJoin(self.strWorkingDir, strDir, strFile)
+					if not objLibOSIsFile(strFilePath):
+						strMsg = "".join([strDir, "/", strFile])
+						arrError.append(strMsg)
+					# End of if
+				# End of for loop
 			# End of for loop
-		# End of for loop
 
-		if len(arrError) > 0:
-			arrError.insert(0, "Missing Files:")
+			if len(arrError) > 0:
+				arrError.insert(0, "Missing Files:")
+			# End of if
 		# End of if
 		strError = "\n".join(arrError)
 
@@ -53,6 +55,10 @@ class clCommon:
 	# End of Check()
 
 	def CreateFunctions(self):
+		if "Functions" not in self.dictParam:
+			return
+		# End of if
+
 		if "INI" in self.dictParam["Functions"]:
 			arrEntry = self.dictParam["Functions"]["INI"]
 			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
