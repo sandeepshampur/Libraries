@@ -12,7 +12,7 @@
 #
 # Fix		  : 22-Jun-2024 : Added check in clListBoxMultiColumn->FormatDate() to leave date untouched if it is already having hyphens ("-")
 # Enhancement : 30-Jun-2024 : Added flag "bSortDescending" to choose order of sorting
-#
+# Enhancement : 17-Jul-2024 : Added function "SetSelection()" to set a specific item
 
 import datetime as objDateTime
 from functools import partial
@@ -45,8 +45,8 @@ class clListBoxMultiColumn:
 		# End of if
 	# End of __init__()
 	
-	def Display(self, objWindow, strSelectMode, ifrX, ifrY, ifrW, ifrH, arrRecords, bSortDescending=False):
-		objFrame = objTK.LabelFrame(objWindow, text="Records", foreground=self.colourFg, background=self.colourBg)
+	def Display(self, objWindow, strSelectMode, ifrX, ifrY, ifrW, ifrH, arrRecords, bSortDescending=False, strHeader=""):
+		objFrame = objTK.LabelFrame(objWindow, text=strHeader, foreground=self.colourFg, background=self.colourBg)
 		self.bSortDescending = bSortDescending
 
 		# Set header background colour
@@ -149,15 +149,15 @@ class clListBoxMultiColumn:
 	def Insert(self, arrList):
 		# Add to listbox
 		iRows = self.GetCount()
-		for iCount in range(len(arrList)):		
-			arrRow = arrList[iCount]
+		for iIndex in range(len(arrList)):
+			arrRow = arrList[iIndex]
 			
 			self.FormatDate(arrRow)
 		
 			if iRows % 2 == 0:
-				self.tvRecords.insert("", "end", values=arrList[iCount], tags="tgEvenRow")
+				self.tvRecords.insert("", "end", values=arrList[iIndex], tags="tgEvenRow")
 			else:
-				self.tvRecords.insert("", "end", values=arrList[iCount], tags="tgOddRow")				
+				self.tvRecords.insert("", "end", values=arrList[iIndex], tags="tgOddRow")
 			# End of if
 			iRows += 1
 		# End of for loop
@@ -171,6 +171,18 @@ class clListBoxMultiColumn:
 		self.ClearAll()
 		self.Insert(self.arrDefaultRecords)
 	# End of Reset()
+
+	def SetSelection(self, iRowPosition):
+		for x in range(1):
+			# Get records
+			arrList = self.tvRecords.get_children()
+			try:
+				self.tvRecords.selection_set(arrList[iRowPosition])
+			except:
+				pass
+			# End of try / except
+		# End of for loop
+	# End of SetSelection()
 	
 	def Sort(self, strSortType, strColumn, reverse):
 		self.tvRecords.SortByFunctionName(strSortType, strColumn, reverse)
