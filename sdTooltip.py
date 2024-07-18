@@ -3,6 +3,8 @@
 #
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
+# Fix : 18-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
+#
 import tkinter as objLibTK
 
 class clTooltip:
@@ -80,12 +82,12 @@ class clTooltip:
 			return
 		# End of if
 
-		if (self.objToolTipWin != None) and (self.IsShowing):
+		if (self.objToolTipWin is not None) and (self.IsShowing):
 			return
 		# End of if
 
 		# Create tooltip window
-		if self.objToolTipWin == None:
+		if self.objToolTipWin is None:
 			# Create tooltip window
 			self.objToolTipWin = objLibTK.Toplevel(self.objWidget)
 			self.objToolTipWin.withdraw()
@@ -95,13 +97,13 @@ class clTooltip:
 			self.lbMessage = objLibTK.Label(objFrame, justify=objLibTK.LEFT, background=self.bg, foreground=self.fg, relief=objLibTK.SOLID, borderwidth=0, wraplength=250)
 			self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
 			objFrame.grid()
-		# End of if
 
-		# Get label dimensions
-		self.lbMessage["text"] = self.strMessage
-		self.lbMessage.update()
-		self.ilbW = self.lbMessage.winfo_width()
-		self.ilbH = self.lbMessage.winfo_height()
+			# Get label dimensions
+			self.lbMessage["text"] = self.strMessage
+			self.lbMessage.update()
+			self.ilbW = self.lbMessage.winfo_width()
+			self.ilbH = self.lbMessage.winfo_height()
+		# End of if
 
 		# Get widget position
 		self.objWidget.update()
@@ -122,12 +124,15 @@ class clTooltip:
 
 		# Prevent going beyond screen
 		if (y < 0):
-			y = 0
+			y = self.objWidget.winfo_height()
 		elif (y + self.ilbH + 10) > self.iScrH:
-			y = self.iScrH - self.ilbH - 10
+			y = self.iScrH - self.objWidget.winfo_height() - self.ilbH - 10
 		# End of if
 		if (x + self.ilbW + 10) > self.iScrW:
 			x = self.iScrW - self.ilbW - 10
+			if self.strPosition == "top-right":
+				y += self.objWidget.winfo_height()
+			# End of if
 		# End of if
 
 		self.objToolTipWin.wm_geometry("+%d+%d" % (x, y))
