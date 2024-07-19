@@ -3,7 +3,7 @@
 #
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
-# Fix : 18-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
+# Fix : 19-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
 #
 import tkinter as objLibTK
 
@@ -12,12 +12,34 @@ class clTooltip:
 		# Initialise class variables
 		self.objWidget = objWidget
 		self.strMessage = strMessage
-		self.strPosition = strPosition
+		self.strTTPosition = strPosition
 		self.fg = fg
 		self.bg = bg
 		self.iTimeout = abs(int(iTimeout) * 1000)
 		self.objToolTipWin = None
 		self.IsShowing = False
+		self.lbMessage = None
+
+		# Create tooltip window
+		self.objToolTipWin = objLibTK.Toplevel(self.objWidget)
+		self.objToolTipWin.withdraw()
+		self.objToolTipWin.wm_overrideredirect(True)
+		self.objToolTipWin.attributes("-topmost", True)
+		objFrame = objLibTK.Frame(self.objToolTipWin, borderwidth=0, background=self.bg)
+		self.lbMessage = objLibTK.Label(objFrame, text=strMessage, justify=objLibTK.LEFT, background=self.bg, foreground=self.fg,
+										relief=objLibTK.SOLID, borderwidth=0, wraplength=250)
+		self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
+		objFrame.grid()
+		self.lbMessage.update()
+
+		# Tooltip Label size
+		self.ilbTTW = self.lbMessage.winfo_width() + 8
+		self.ilbTTH = self.lbMessage.winfo_height() + 8
+
+		# Widget size
+		self.objWidget.update()
+		self.iWidgetW = self.objWidget.winfo_width()
+		self.iWidgetH = self.objWidget.winfo_height()
 
 		# Bind to mouse
 		self.objWidget.bind("<Enter>", self.ShowTip)
@@ -41,18 +63,31 @@ class clTooltip:
 
 			if len(self.strMessage) != 0:
 				self.strMessage = "\n".join([self.strMessage, strMessage])
-				break
+			else:
+				self.strMessage = strMessage
 			# End of if
 
-			self.strMessage = strMessage
+			# Get label dimensions
+			if self.lbMessage is not None:
+				self.lbMessage["text"] = self.strMessage
+				self.lbMessage.update()
+				self.ilbTTW = self.lbMessage.winfo_width() + 8
+				self.ilbTTH = self.lbMessage.winfo_height() + 8
+			# End of if
 		# End of for loop
 	# End of AppendMessage()
 
 	def CloseTip(self, objEvent=None):
-		if self.objToolTipWin:
-			self.objToolTipWin.withdraw()
+		for x in range(1):
+			if not self.IsShowing:
+				break
+			# End of if
+
 			self.IsShowing = False
-		# End of if
+			if self.objToolTipWin is not None:
+				self.objToolTipWin.withdraw()
+			# End of if
+		# End of for loop
 	# End of CloseTip()
 
 	def IsError(self):
@@ -65,81 +100,126 @@ class clTooltip:
 	# End of IsError()
 
 	def SetMessage(self, strMessage=""):
-		self.strMessage = strMessage
-		if len(strMessage) == 0:
-			self.CloseTip()
-		# End of if
+		for x in range(1):
+			self.strMessage = strMessage
+			if len(strMessage) == 0:
+				self.CloseTip()
+				break
+			# End of if
+
+			# Get label dimensions
+			if self.lbMessage is not None:
+				self.lbMessage["text"] = self.strMessage
+				self.lbMessage.update()
+				self.ilbTTW = self.lbMessage.winfo_width() + 8
+				self.ilbTTH = self.lbMessage.winfo_height() + 8
+			# End of if
+		# End of for loop
 	# End of SetMessage()
 
 	def RemoveMessage(self, strMessage):
-		self.strMessage = self.strMessage.replace(strMessage, "")
-		self.strMessage = self.strMessage.replace("\n\n", "\n")
-		self.strMessage = self.strMessage.strip()
+		for x in range(1):
+			self.strMessage = self.strMessage.replace(strMessage, "")
+			self.strMessage = self.strMessage.replace("\n\n", "\n")
+			self.strMessage = self.strMessage.strip()
+
+			if len(self.strMessage) == 0:
+				self.CloseTip()
+				break
+			# End of if
+
+			# Get label dimensions
+			if self.lbMessage is not None:
+				self.lbMessage["text"] = self.strMessage
+				self.lbMessage.update()
+				self.ilbTTW = self.lbMessage.winfo_width() + 8
+				self.ilbTTH = self.lbMessage.winfo_height() + 8
+			# End of if
+		# End of for loop
 	# End of RemoveMessage()
 
 	def ShowTip(self, objEvent):
-		if len(self.strMessage) == 0:
-			return
-		# End of if
-
-		if (self.objToolTipWin is not None) and (self.IsShowing):
-			return
-		# End of if
-
-		# Create tooltip window
-		if self.objToolTipWin is None:
-			# Create tooltip window
-			self.objToolTipWin = objLibTK.Toplevel(self.objWidget)
-			self.objToolTipWin.withdraw()
-			self.objToolTipWin.wm_overrideredirect(True)
-			self.objToolTipWin.attributes("-topmost", True)
-			objFrame = objLibTK.Frame(self.objToolTipWin, borderwidth=0, background=self.bg)
-			self.lbMessage = objLibTK.Label(objFrame, justify=objLibTK.LEFT, background=self.bg, foreground=self.fg, relief=objLibTK.SOLID, borderwidth=0, wraplength=250)
-			self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
-			objFrame.grid()
-
-			# Get label dimensions
-			self.lbMessage["text"] = self.strMessage
-			self.lbMessage.update()
-			self.ilbW = self.lbMessage.winfo_width()
-			self.ilbH = self.lbMessage.winfo_height()
-		# End of if
-
-		# Get widget position
-		self.objWidget.update()
-		x = self.objWidget.winfo_rootx()
-		y = self.objWidget.winfo_rooty()
-
-		# Calculate tooltip position
-		if self.strPosition == "top-left":
-			y -= self.ilbH
-		elif self.strPosition == "top-right":
-			x += self.objWidget.winfo_width()
-		elif self.strPosition == "bottom-left":
-			y += self.objWidget.winfo_height()
-		elif self.strPosition == "bottom-right":
-			x += self.objWidget.winfo_width()
-			y += self.objWidget.winfo_height()
-		# End of if
-
-		# Prevent going beyond screen
-		if (y < 0):
-			y = self.objWidget.winfo_height()
-		elif (y + self.ilbH + 10) > self.iScrH:
-			y = self.iScrH - self.objWidget.winfo_height() - self.ilbH - 10
-		# End of if
-		if (x + self.ilbW + 10) > self.iScrW:
-			x = self.iScrW - self.ilbW - 10
-			if self.strPosition == "top-right":
-				y += self.objWidget.winfo_height()
+		for x in range(1):
+			if len(self.strMessage) == 0:
+				break
 			# End of if
-		# End of if
 
-		self.objToolTipWin.wm_geometry("+%d+%d" % (x, y))
-		self.objToolTipWin.deiconify()
-		self.IsShowing = True
+			if self.IsShowing:
+				break
+			# End of if
 
-		# Add timeout
-		self.objToolTipWin.after(self.iTimeout, self.CloseTip)
+			# Get widget position
+			self.objWidget.update()
+			iTTX = self.objWidget.winfo_rootx()
+			iTTY = self.objWidget.winfo_rooty()
+
+			# Calculate tooltip position
+			match self.strTTPosition:
+				case "top-left":
+					iTTY -= self.ilbTTH
+
+					# Prevent tool tip from going out of screen
+					if iTTY < 0:
+						iTTY += self.ilbTTH + self.iWidgetH
+					# End of if
+
+					if (iTTX + self.ilbTTW) > self.iScrW:
+						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
+					# End of if
+				# End of case
+
+				case "top-right":
+					iTTX += self.iWidgetW
+
+					# Prevent tool tip from going out of screen
+					if (iTTX + self.ilbTTW) > self.iScrW:
+						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
+						if (iTTY + self.ilbTTH) > self.iScrH:
+							iTTY -= self.ilbTTH
+						else:
+							iTTY += self.iWidgetH
+						# End of if
+					else:
+						if  (iTTY + self.ilbTTH) > self.iScrH:
+							iTTY -= self.ilbTTH
+						else:
+							iTTY += self.iWidgetH
+						# End of if
+					# End of if
+				# End of case
+
+				case "bottom-left":
+					iTTY += self.iWidgetH
+
+					# Prevent tool tip from going out of screen
+					if (iTTY + self.ilbTTH) > self.iScrH:
+						iTTY -= (self.iWidgetH + self.ilbTTH)
+					# End of if
+					if (iTTX + self.ilbTTW) > self.iScrW:
+						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
+					# End of if
+				# End of case
+
+				case "bottom-right":
+					iTTX += self.iWidgetW
+					iTTY += self.iWidgetH
+
+					# Prevent tool tip from going out of screen
+					if (iTTX + self.ilbTTW) > self.iScrW:
+						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
+					# End of if
+					if (iTTY + self.ilbTTH) > self.iScrH:
+						iTTY -= (self.iWidgetH + self.ilbTTH)
+					# End of if
+				# End of case
+			# End of match
+
+			self.objToolTipWin.wm_geometry("+%d+%d" % (iTTX, iTTY))
+			self.objToolTipWin.deiconify()
+			self.IsShowing = True
+
+			# Add timeout
+			self.objToolTipWin.after(self.iTimeout, self.CloseTip)
+		# End of for loop
 	# End of ShowTip()
 # End of class clTooltip
