@@ -1,5 +1,5 @@
 #
-# Completed: 16-July-2024
+# Completed: 19-July-2024
 #
 
 import os as objLibOS
@@ -8,6 +8,7 @@ from os.path import join as objLibOSPathJoin
 import sdDatabase as objLibDatabase
 import sdIniParser as objLibIniParser
 import sdLogger as objLibLogger
+import sdMessageBox as objLibMessageBox
 from tkinter import font as objLibTkFont
 from tkinter import ttk as objLibTTK
 
@@ -59,6 +60,13 @@ class clCommon:
 			return
 		# End of if
 
+		if "Database" in self.dictParam["Functions"]:
+			arrEntry = self.dictParam["Functions"]["Database"]
+			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
+			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger.Log)
+			self.dictInfo["Functions"]["Logger"] = objFunction
+		# End of if
+
 		if "INI" in self.dictParam["Functions"]:
 			arrEntry = self.dictParam["Functions"]["INI"]
 			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
@@ -86,11 +94,11 @@ class clCommon:
 			self.dictInfo["Functions"]["Logger"] = objFunction
 		# End of if
 
-		if "Database" in self.dictParam["Functions"]:
-			arrEntry = self.dictParam["Functions"]["Database"]
-			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
-			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger.Log)
-			self.dictInfo["Functions"]["Logger"] = objFunction
+		if "MessageBox" in self.dictParam["Functions"]:
+			arrEntry = self.dictParam["Functions"]["MessageBox"]
+			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0])
+			objFunction = objLibMessageBox.clMessageBox(strPath)
+			self.dictInfo["Functions"]["MessageBox"] = objFunction
 		# End of if
 	# End of CreateFunctions()
 
@@ -166,6 +174,7 @@ class clCommon:
 				"INI": ["Data", "ControlPanel.ini"],
 				"Logger": ["Data", "ControlPanelLogs.txt"],
 				"Database": ["Data", "ControlPanel.db"]
+				"MessageBox": ["Data"]
 			},
 			"strPath": __file__
 		}
