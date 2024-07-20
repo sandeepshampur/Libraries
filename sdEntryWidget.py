@@ -11,7 +11,7 @@
 #							  2. Added function to get size of widget "GetSize()"
 #							  3. Added functions "SetMaxChars()", "GetBg()", "GetPlaceInfo()", "Forget()", "Place()", "GetName()", "SetName()", "Bind()"
 #
-# Fix		  : 14-Jul-2024 : Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
+# Fix		  : 20-Jul-2024 : Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
 #
 
 import threading as objLibThreading
@@ -305,10 +305,17 @@ class clEntryWidget:
 		self.WidgetTT.SetMessage(strMsg)
 	# End of SetTooltip()
 
-	def SetValue(self, strValue):
-		self.Widget.config(validate="none")
-		self.Widget.delete(0, objLibTk.END)
-		self.Widget.insert(0, strValue)
-		self.Widget.config(validate="key")
+	def SetValue(self, strValue, bValidate=False):
+		if bValidate:
+			self.Widget.config(validate="none")
+			self.Widget.delete(0, objLibTk.END)
+			self.Widget.config(validate="key")
+			self.Widget.insert(0, strValue)
+		else:
+			self.Widget.config(validate="none")
+			self.Widget.delete(0, objLibTk.END)
+			self.Widget.insert(0, strValue)
+			self.Widget.config(validate="key")
+		# End of if
 	# End of Set()
 # End of class clEntryWidget
