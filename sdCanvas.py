@@ -8,7 +8,7 @@
 #
 # Fix 		  :	16-Oct-2023 : Changed deprecated function "ANTIALIAS" with "LANCZOS"
 # Fix		  : 21-Jul-2024 : 1. Fixed code in CreateImage() where size was calculated wrongly when both width and height were -1
-#				  2. Added function ResizeImage()
+#							  2. Added function ResizeImage()
 
 #********************************************************************************************
 # Imports
@@ -222,6 +222,12 @@ class clCanvas:
 				objImg = self.objImg
 			# End of if
 
+			try:
+				objImg.size[0]
+			except:
+				objImg = objLibImageTk.getimage(objImg)
+			# End of try / except
+
 			if iImgW == -1:
 				iImgW = int(iImgH * objImg.size[0] / objImg.size[1])
 			# End of if
@@ -230,11 +236,7 @@ class clCanvas:
 				iImgH = int(iImgW * objImg.size[1] / objImg.size[0])
 			# End of if
 
-			try:
-				objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
-			except:
-				objImg = objLibImageTk.getimage(objImg)
-				objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
+			objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
 			# End of try / except
 
 			self.objImg = objLibImageTk.PhotoImage(objImg)
