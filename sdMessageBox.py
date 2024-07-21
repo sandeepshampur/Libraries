@@ -7,107 +7,98 @@
 # Enhancement : 01-Mar-2022 : 1. Added border to window
 # 							  2. Added code to consider text height based on font size
 #
+# Enhancement : 21-Jul-2024 : 1. Added "font" parameter to __init__()
+#							  2. Redid logic of CreateWindow()
 
 #********************************************************************************************
 # Imports
 #********************************************************************************************
 import os as objLibOS
+from os.path import join as objLibOSPathJoin
 import sdCanvas as objLibCanvas
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
 
 class clMessageBox:
-	def __init__(self, strImgPath="", dictFileNames={}, bDisableEsc=False, bDisableWinClose=False):
+	def __init__(self, strImgPath="", dictFileNames={}, bDisableEsc=False, bDisableWinClose=False, font="Arial 12 normal"):
 		if len(dictFileNames) == 0:
-			dictFileNames = {"Error": "MB-Error.png", "Information": "MB-Information.png", "Question": "MB-Question.png", "Warning": "MB-Warning.png"}
+			self.dictFileNames = {"Error": "MB-Error.png", "Information": "MB-Information.png", "Question": "MB-Question.png", "Warning": "MB-Warning.png"}
+		else:
+			self.dictFileNames = dictFileNames
 		# End of if
-		self.dictFileNames = dictFileNames
 		self.bDisableEsc = bDisableEsc
 		self.bDisableWinClose = bDisableWinClose
+		self.arrFont = font.split(" ")
+
 		self.dictImages = {"Error": None, "Information": None, "Question": None, "Warning": None}
 		self.strBtnOption = ""
-		self.iImgWH = -1
-		self.itxtW = -1
-		self.itxtH = -1
+		self.bFontInitialised = False
 
-		# Check images
-		self.strImgPath = ""
-		for x in range(1):
-			if len(strImgPath) == 0:
-				break
-			# End of if
-
-			# Check if path exists
-			if not objLibOS.path.isdir(strImgPath):
-				break
-			# End of if
-
-			if strImgPath[-1:] != objLibOS.sep:
-				strImgPath = "".join([strImgPath, objLibOS.sep])
-			# End of if
-			self.strImgPath = strImgPath
-
-			# Check if images exists
-			for strType in dictFileNames:
-				strFilePath = "".join([strImgPath, dictFileNames[strType]])
-
-				if not objLibOS.path.isfile(strFilePath):
-					dictFileNames[strType] = ""
-				else:
-					dictFileNames[strType] = strFilePath
-				# End of if
-			# End of for loop
+		# Create images
+		self.objCanvas = objLibCanvas.clCanvas()
+		for strKey in self.dictImages:
+			try:
+				strPath = objLibOSPathJoin(strImgPath, self.dictFileNames[strKey])
+				self.objCanvas.CreateImage(strPath)
+				dictDim = self.objCanvas.GetDimensions()
+				self.dictImages[strKey] = dictDim["Image"]
+			except:
+				pass
+			# End of try / except
 		# End of for loop
 	# End of __init__()
 
 	def CreateWindow(self, objParentWindow, strMBType, strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg):
 		objWindow = objLibTK.Toplevel(objParentWindow)
-		objWindow.withdraw()
 		objWindow.grab_set()
+		objWindow.withdraw()
 		objWindow.configure(bg=colourBg)
 		self.objWindow = objWindow
 
-		# Text height
-		if self.itxtH == -1:
-			objFont = objLibTkFont.Font(font="TkDefaultFont")
+		# Font values
+		if not self.bFontInitialised:
+			objFont = objLibTkFont.Font(family=self.arrFont[0], size=self.arrFont[1], weight=self.arrFont[2])
 			self.itxtH = objFont.metrics("linespace")
-			self.itxtW = objFont.measure("x")
+			self.itxtW = objFont.measure("W")
 			self.iImgWH = self.itxtH * 3
+
+			# Screen dimensions
+			self.iScrW = objParentWindow.winfo_screenwidth()
+			self.iScrH = objParentWindow.winfo_screenheight()
+
+			# Resize images
+			for strKey in self.dictImages:
+				self.objCanvas.ResizeImage(self.dictImages[strKey], self.iImgWH, self.iImgWH)
+				dictDim = self.objCanvas.GetDimensions()
+				self.dictImages[strKey] = dictDim["Image"]
+			# End of for loop
+
+			self.bFontInitialised = True
 		# End of if
 
 		# Border
-		objBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=colourBg)
+		objfrBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=colourBg)
 
 		# ------------------------- Heading -------------------------
-		objHdrLabel = objLibTK.Label(objWindow, text=strTitle, anchor="center", fg=colourFg, bg=colourBg)
-		objHdrLabel.config(font="bold")
+		strFont = " ".join([self.arrFont[0], str(int(self.arrFont[1])+2), "bold"])
+		objHdrLabel = objLibTK.Label(objWindow, text=strTitle, font=strFont, justify="center", fg=colourFg, bg=colourBg)
 		iHdrlbH = objHdrLabel.winfo_reqheight()
 
 		# ------------------------- Message -------------------------
 		iMsglbY = iHdrlbH + 10
-		iMsglbH = self.itxtH * 3
-		iMsglbW = self.itxtW * 50
+		iMsglbW = self.itxtW * 30
 
-		objMsgLabel = objLibTK.Label(objWindow, text=strMsg, justify="left", anchor="w", fg=colourFg,  bg=colourBg, wraplength=iMsglbW)
+		strFont = " ".join([self.arrFont[0], str(self.arrFont[1]), "normal"])
+		objMsgLabel = objLibTK.Label(objWindow, font=strFont, text=strMsg, justify="left", fg=colourFg,  bg=colourBg, wraplength=iMsglbW)
+		iMsglbW = objMsgLabel.winfo_reqwidth()
+		iMsglbH = objMsgLabel.winfo_reqheight()
+		if iMsglbH < self.iImgWH:
+			iMsglbH = self.iImgWH
+		# End of if
 
 		# ------------------------- Image -------------------------
 		iImgY = iMsglbY + int(iMsglbH / 2) - int(self.iImgWH / 2)
-
 		objImg = self.dictImages[strMBType]
-		# Create image if required
-		self.objCanvas = objLibCanvas.clCanvas()
-		if objImg is None:
-			try:
-				strImgPath = self.dictFileNames[strMBType]
-				self.objCanvas.CreateImage(strImgPath, self.iImgWH, self.iImgWH)
-				dictDim = self.objCanvas.GetDimensions()
-				objImg = dictDim["Image"]
-				self.dictImages[strMBType] = objImg
-			except:
-				pass
-			# End of try / except
-		# End of if
-
 		if objImg is not None:
 			self.objCanvas.CreateCanvas(objWindow, 5, iImgY, colourBg, objImg=objImg)
 		# End of if
@@ -120,10 +111,11 @@ class clMessageBox:
 		objHdrLabel.place(x=5, y=5, width=iHdrlbW, height=iHdrlbH)
 
 		# ------------------------- Buttons -------------------------
-		ibtnY = iMsglbY + iMsglbH + 10
+		iMessageBoxW = iHdrlbW + 10
+		ibtnY = iMsglbY + iMsglbH + 30
 		ibtnW = self.itxtH * 5
 		ibtnH = int(self.itxtH * 1.5)
-		ibtnX = int(iHdrlbW / 2) - int(ibtnW * 1.5) - 10
+		ibtnX = 10
 
 		arrButtonText = [strButton1Text, strButton2Text, strButton3Text]
 		for strButtonText in arrButtonText:
@@ -136,43 +128,47 @@ class clMessageBox:
 		# End of for loop
 
 		# ------------------------- Window -------------------------
+		if iMessageBoxW < ibtnX:
+			iMessageBoxW = ibtnX
+		# End of if
 		objWindow.wm_overrideredirect(True)
 		objWindow.bind("<Escape>", lambda _: self.HandlerbtnEsc())
 		objWindow.protocol("WM_DELETE_WINDOW", self.HandlerWinClose)
 
-		iWinW = iHdrlbW + 10
-		iWinH = ibtnY + ibtnH + 20
+		iMessageBoxH = ibtnY + ibtnH + 20
 
 		# Border
-		objBorder.place(x=0, y=0, width=iWinW, height=iWinH)
+		objfrBorder.place(x=0, y=0, width=iMessageBoxW, height=iMessageBoxH)
 
-		# Window location
+		# Calculate window location
 		if iX == -1:
 			objParentWindow.update()
-			iWinX = objParentWindow.winfo_rootx()
-			iW = objParentWindow.winfo_width()
-			iWinX += int(iW / 2)- int(iWinW / 2)
-			if iWinX < 0:
-				iWinX = 0
+			iX = objParentWindow.winfo_x()
+			iX += int((objParentWindow.winfo_width() / 2) - (iMessageBoxW / 2))
+			if iX < 0:
+				iX = 0
+			elif iX > self.iScrW:
+				iX -= (iX - self.iScrW)
 			# End of if
 		# End of if
 		if iY == -1:
-			iScrH = objParentWindow.winfo_screenheight()
 			objParentWindow.update()
-			iWinY = objParentWindow.winfo_rooty()
-			iH = objParentWindow.winfo_height()
-			iWinY += iY + int(iH / 2)- int(iWinH / 2)
-			if (iWinY + iWinH) > iScrH:
-				iWinY = iScrH - iWinH
+			iY = objParentWindow.winfo_y()
+			iY += int((objParentWindow.winfo_height() / 2) - (iMessageBoxH / 2))
+			if iY < 0:
+				iY = 0
+			elif iY > self.iScrH:
+				iY -= (iY - self.iScrH)
 			# End of if
 		# End of if
 
-		strWinDim = "".join([str(iWinW), "x", str(iWinH), "+", str(iWinX), "+", str(iWinY)])
+		strWinDim = "".join([str(iMessageBoxW), "x", str(iMessageBoxH), "+", str(iX), "+", str(iY)])
 		objWindow.geometry(strWinDim)
 		objWindow.focus_force()
 		objWindow.deiconify()
 
 		objParentWindow.wait_window(objWindow)
+		objParentWindow.focus_force()
 	# End of CreateWindow()
 
 	def Handlerbtn(self, strBtnOption):
@@ -194,30 +190,45 @@ class clMessageBox:
 		# End of if
 	# End of HandlerWinClose()
 
-	def ShowError(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="", colourFg="white", colourBg="#ED1B2E"):
-		self.CreateWindow(objParentWindow, "Error", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg)
-		return self.strBtnOption
+	def ShowError(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+				  colourFg="white", colourBg="#ED1B2E"):
+		self.CreateWindow(objParentWindow, "Error", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+						  colourFg, colourBg)
+		strBtnOption = self.strBtnOption
+		self.strBtnOption = ""
+		return strBtnOption
 	# End of ShowError()
 
-	def ShowInformation(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="", colourFg="white", colourBg="#65357F"):
-		self.CreateWindow(objParentWindow, "Information", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg)
-		return self.strBtnOption
+	def ShowInformation(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+						colourFg="white", colourBg="#65357F"):
+		self.CreateWindow(objParentWindow, "Information", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+						  colourFg, colourBg)
+		strBtnOption = self.strBtnOption
+		self.strBtnOption = ""
+		return strBtnOption
 	# End of ShowError()
 
-	def ShowQuestion(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="", colourFg="white", colourBg="#1A62C5"):
-		self.CreateWindow(objParentWindow, "Question", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg)
-		return self.strBtnOption
+	def ShowQuestion(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+					 colourFg="white", colourBg="#1A62C5"):
+		self.CreateWindow(objParentWindow, "Question", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+						  colourFg, colourBg)
+		strBtnOption = self.strBtnOption
+		self.strBtnOption = ""
+		return strBtnOption
 	# End of ShowError()
 
-	def ShowWarning(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="", colourFg="black", colourBg="#FFD42A"):
-		self.CreateWindow(objParentWindow, "Warning", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg)
-		return self.strBtnOption
+	def ShowWarning(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+					colourFg="black", colourBg="#FFD42A"):
+		self.CreateWindow(objParentWindow, "Warning", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+						  colourFg, colourBg)
+		strBtnOption = self.strBtnOption
+		self.strBtnOption = ""
+		return strBtnOption
 	# End of ShowError()
 
 	def Exit(self):
-		self.objCanvas = None
-		self.objWindow.grab_release()
 		self.objWindow.destroy()
+		self.objWindow.grab_release()
 		self.objWindow = None
 	# End of Exit()
 # End of class clMessageBox
