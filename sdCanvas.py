@@ -7,7 +7,8 @@
 #							  5. Add parameter "strTooltip" to function AddImage()
 #
 # Fix 		  :	16-Oct-2023 : Changed deprecated function "ANTIALIAS" with "LANCZOS"
-#
+# Fix		  : 21-Jul-2024 : 1. Fixed code in CreateImage() where size was calculated wrongly when both width and height were -1
+#				  2. Added function ResizeImage()
 
 #********************************************************************************************
 # Imports
@@ -20,7 +21,8 @@ import threading as objLibThreading
 import tkinter as objLibTK
 
 class clCanvas:
-	def __init__(self):
+	def __init__(self, objLoggerLog=None):
+		self.objLoggerLog = objLoggerLog
 		self.objCanvas = None
 		self.objTooltip = None
 		self.objImg = None
@@ -62,7 +64,7 @@ class clCanvas:
 	# End of Bind()
 
 	def ChangeImage(self, objImg, strTooltip=""):
-		if self.objImg == None:
+		if self.objImg is None:
 			self.objCanvas.create_image(0, 0, anchor=objLibTK.NW, image=objImg)
 		else:
 			self.objCanvas.itemconfig(1, image=objImg)
@@ -90,7 +92,7 @@ class clCanvas:
 	# End of AddTooltip()
 
 	def Clear(self, iImgID=-1):
-		if self.objCanvas != None:
+		if self.objCanvas is not None:
 			if iImgID == -1:
 				self.objCanvas.delete("all")
 			else:
@@ -108,7 +110,7 @@ class clCanvas:
 	def CreateCanvas(self, objWindow, iX, iY, colourBg="white", bTooltip=False, strTooltip="", strTooltipPos="bottom-left", objImg=None, iW=-1, iH=-1):
 		self.iX = iX
 		self.iY = iY
-		if objImg != None:
+		if objImg is not None:
 			self.iImgW = objImg.width()
 			self.iImgH = objImg.height()
 			self.objImg = objImg
@@ -123,7 +125,7 @@ class clCanvas:
 		self.objCanvas = objLibTK.Canvas(objWindow, width=iW, height=iH, highlightthickness=0, background=colourBg)
 		self.objCanvas.place(x=iX, y=iY)
 		self.dictPlaceInfo = self.objCanvas.place_info()
-		if self.objImg != None:
+		if self.objImg is not None:
 			self.imgID = self.objCanvas.create_image(0, 0, anchor=objLibTK.NW, image=self.objImg)
 		else:
 			self.imgID = -1
@@ -141,15 +143,28 @@ class clCanvas:
 	# End of CreateCanvas()
 
 	def CreateImage(self, strImgPath="", iImgW=-1, iImgH=-1, objImg=None):
-		if objImg == None:
+		if objImg is None:
 			# Open image
 			objImg = objLibImage.open(strImgPath)
 
-			if iImgW == -1:
-				iImgW = int(iImgH * objImg.size[0] / objImg.size[1])
-			elif iImgH == -1:
-				iImgH = int(iImgW * objImg.size[1] / objImg.size[0])
-			# End of if
+			# Determine width and height preserving aspect ratio
+			for x in range(1):
+				if iImgW == -1 and iImgH == -1:
+					iImgW = objImg.size[0]
+					iImgH = objImg.size[1]
+					break
+				# End of if
+
+				if iImgW == -1:
+					iImgW = int(iImgH * objImg.size[0] / objImg.size[1])
+					break
+				# End of if
+
+				if iImgH == -1:
+					iImgH = int(iImgW * objImg.size[1] / objImg.size[0])
+					break
+				# End of if
+			# End of for loop
 			self.iImgW = iImgW
 			self.iImgH = iImgH
 
@@ -193,6 +208,40 @@ class clCanvas:
 	def MoveImage(self, imgID, iX, iY):
 		self.objCanvas.move(imgID, iX, iY)
 	# End of MoveImage()
+
+	def ResizeImage(self, objImg=None, iImgW=-1, iImgH=-1):
+		for x in range(1):
+			if iImgW == -1 and iImgH == -1:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Warning: Both iImgW and iImgH are -1. Returning same image without resizing")
+				# End of if
+				break
+			# End of if
+
+			if objImg == None:
+				objImg = self.objImg
+			# End of if
+
+			if iImgW == -1:
+				iImgW = int(iImgH * objImg.size[0] / objImg.size[1])
+			# End of if
+
+			if iImgH == -1:
+				iImgH = int(iImgW * objImg.size[1] / objImg.size[0])
+			# End of if
+
+			try:
+				objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
+			except:
+				objImg = objLibImageTk.getimage(objImg)
+				objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
+			# End of try / except
+
+			self.objImg = objLibImageTk.PhotoImage(objImg)
+			self.iImgW = iImgW
+			self.iImgH = iImgH
+		# End of for loop
+	# End of ResizeImage()
 
 	def SetBackgroundColour(self, colourBg):
 		self.objCanvas.configure(bg=colourBg)
