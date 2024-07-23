@@ -49,6 +49,7 @@ class clTimePicker:
 		# Screen dimensions
 		self.iScrW = objParentWindow.winfo_screenwidth()
 		self.iScrH = objParentWindow.winfo_screenheight()
+		self.strTime = ""
 
 		# Border
 		iPad = 10
@@ -233,8 +234,7 @@ class clTimePicker:
 		strHour = str(f'{self.iHour:02}')
 		strMinute = str(f'{self.iMinute:02}')
 		self.strTime = "".join([strHour, ":", strMinute, " ", self.strCurTimePeriod])
-		self.objWindow.grab_release()
-		self.objWindow.destroy()
+		self.Exit()
 	# End of HandlerbtnDone()
 
 	def HandlerbtnTime(self, strFocus):
@@ -267,7 +267,6 @@ class clTimePicker:
 		self.bResetFlow = False
 		self.iHour = 0
 		self.iMinute = 0
-		self.strTime = ""
 		self.dictWidgets.clear()
 	# End of Reset()
 
