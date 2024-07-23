@@ -1,202 +1,346 @@
 #
-# Created: 02-March-2022
-#
-# Fix : 22-Jun-2024 : Moved objWindow.grab_set() to end of function and added Added objWindow.wait_visibility() in clTimePicker:CreateWidget()
+# Created:	 23-July-2024
 #
 
-#********************************************************************************************
-# Imports
-#********************************************************************************************
-import datetime as objLibDateTime
-import sdCanvas as objLibCanvas
-import sdEntryWidget as objLibEntryWidget
-import threading as objLibThreading
+from datetime import datetime as objLibDateTime
+from time import time as objLibCurrentTime
 import tkinter as objLibTK
-from tkinter import ttk as objLibTTK
+from tkinter import font as objLibTkFont
 
 class clTimePicker:
-	def __init__(self, colourFg, colourBg, objCallback):
+	def __init__(self, font="Arial 12 normal", colourFg="black", colourBg="#d9d9d9", objCallback=None):
+		self.strFont = font
 		self.colourFg = colourFg
 		self.colourBg = colourBg
 		self.objCallback = objCallback
 
-		self.Images = []
+		self.arrFont = font.split(" ")
+		self.strCurTimePeriod = "AM"
+		self.strCurTimeFocus = "Hour"
+		self.bResetFlow = False
+		self.iHour = 0
+		self.iMinute = 0
+		self.strTime = ""
+		self.dictWidgets = {}
+		'''
+		Dictionary structure
+		self.dictWidgets = {
+			"Time": [<Hour|Minute>]
+			"TimeString": <objWidget>
+			"AMPM": [<AM|PM>]
+			"Numpad": [<0-9>]
+			"Buttons": [<Done|Cancel>]
+		}		
+		'''
 	# End of __init__()
 
-	def ShowIcon(self, objParentWindow, objMaster, iX, iY, iW, iH, strImgPath):
-		# Initialise
-		self.objParentWindow = objParentWindow
-		self.objMaster = objMaster
-
-		self.objCanvasIcon = objLibCanvas.clCanvas()
-		self.objCanvasIcon.CreateImage(strImgPath, iW, iH)
-		dictDim = self.objCanvasIcon.GetDimensions()
-		self.Images.append(dictDim["Image"])
-		self.objCanvasIcon.CreateCanvas(objMaster, iX, iY, self.colourBg)
-		self.objCanvasIcon.Bind("<Button-1>", self.HandlerIconClick)
-
-		return dictDim["Width"]
-	# End of Show()
-
-	def ShowWidget(self, objParentWindow=None):
-		# Initialise
-		if objParentWindow is not None:
-			self.objParentWindow = objParentWindow
-		# End of if
-
-		objWindow = objLibTK.Toplevel(self.objParentWindow)
+	def Show(self, objParentWindow, iWinX=-1, iWinY=-1):
+		objWindow = objLibTK.Toplevel(objParentWindow)
+		objWindow.grab_set()
 		objWindow.withdraw()
-		self.objWindow = objWindow
-		objWindow.wm_overrideredirect(True)
 		objWindow.configure(bg=self.colourBg)
+		self.objWindow = objWindow
 
-		# Set theme and general colours mapping
-		objStyle = objLibTTK.Style()
-		objStyle.theme_use("clam")
+		# Font values
+		objFont = objLibTkFont.Font(family=self.arrFont[0], size=self.arrFont[1], weight=self.arrFont[2])
+		self.itxtH = objFont.metrics("linespace")
+		self.itxtW = objFont.measure("W")
 
-		objStyle = objLibTTK.Style(objWindow)
-		objStyle.map("TCombobox", selectforeground=[('readonly', '!focus', 'black'), ('readonly', 'focus', 'white')], selectbackground=[('readonly', '!focus', 'white')], fieldbackground=[('readonly', '!focus', 'white'), ('disabled', '#DCDAD5')], foreground=[('readonly', '!focus', 'black')])
+		# Screen dimensions
+		self.iScrW = objParentWindow.winfo_screenwidth()
+		self.iScrH = objParentWindow.winfo_screenheight()
 
-		itxtH = 25
-
-		# ------------------------- Border -------------------------
 		# Border
-		objBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=self.colourBg)
-
-		# ------------------------- Heading -------------------------
-
-		self.objHdrLabel = objLibTK.Label(objWindow, text="Enter time", anchor="center", foreground=self.colourFg, background=self.colourBg)
+		iPad = 10
+		objfrBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=self.colourBg)
 
 		# ------------------------- Time -------------------------
-		iX = 10
-		iY = itxtH + 15
-		iW = 50
+		ibtnX = iPad
+		ibtnY = iPad
+		self.dictWidgets["Time"] = []
 
 		# Hour
-		self.txtHour = objLibEntryWidget.clEntryWidget(value="", maxChars=2, iMin=0, iMax=12, charsAllowed="\d+", emptyAllowed="yes")
-		self.txtHour.Display(objWindow, x=iX, y=iY, w=iW, h=itxtH, justify="center")
+		iFontSize = int(self.arrFont[1]) * 2
+		strFont = " ".join([self.arrFont[0], str(iFontSize), "bold"])
+		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
+		objButton.config(relief="sunken")
+		objButton.place(x=ibtnX, y=ibtnY)
+		objButton.bind("<Button-1>", lambda _: self.HandlerbtnTime("Hour"))
+		ibtnWH = objButton.winfo_reqwidth()
+		self.dictWidgets["Time"].append(objButton)
 
-		# Separator
-		iX += iW + 5
-		objLabel = objLibTK.Label(objWindow, text=":", anchor="center", foreground=self.colourFg, background=self.colourBg)
-		objLabel.place(x=iX, y=iY, width=20, height=itxtH)
+		# Time separator
+		ibtnX += ibtnWH + 1
+		objLabel = objLibTK.Label(master=objfrBorder, text=":", font=strFont)
+		objLabel.place(x=ibtnX, y=ibtnY)
+		ilbW = objLabel.winfo_reqwidth()
 
 		# Minute
-		iX += 25
-		self.txtMinute = objLibEntryWidget.clEntryWidget(value="", maxChars=2, iMin=0, iMax=59, charsAllowed="\d+", emptyAllowed="yes")
-		self.txtMinute.Display(objWindow, x=iX, y=iY, w=iW, h=itxtH, justify="center")
+		ibtnX += ilbW + 1
+		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
+		objButton.config(relief="sunken")
+		objButton.place(x=ibtnX, y=ibtnY)
+		objButton.bind("<Button-1>", lambda _: self.HandlerbtnTime("Minute"))
+		self.dictWidgets["Time"].append(objButton)
 
-		# Combobox
-		iX += iW + 15
-		self.cbDayPart = objLibTTK.Combobox(master=objWindow, state="readonly", values=("AM", "PM", ))
-		self.cbDayPart.place(x=iX, y=iY, width=iW, height=itxtH)
-		self.cbDayPart.set("AM")
+		self.strCurTimeFocus = "Hour"
 
-		iWinW = iX + iW + 15
+		# ------------------------- AM / PM -------------------------
+		ibtnX += ibtnWH + iPad
+		ibtnH = int(ibtnWH / 2)
+		iFontSize = int(int(self.arrFont[1]) * 0.75)
+		strFont = " ".join([self.arrFont[0], str(iFontSize), "bold"])
+		self.dictWidgets["AMPM"] = []
 
-		# Hour heading
-		iX = 10
-		iY += itxtH + 5
-		objLabel = objLibTK.Label(objWindow, text="Hour", anchor="center", foreground=self.colourFg, background=self.colourBg)
-		objLabel.place(x=iX, y=iY, width=iW, height=itxtH)
+		arrInfo = ["AM", "PM"]
+		for strPeriod in arrInfo:
+			objButton = objLibTK.Button(objfrBorder, text=strPeriod, font=strFont, padx=2, pady=2,
+										command=lambda strPeriod=strPeriod:self.ToggleAMPM(strPeriod))
+			objButton.place(x=ibtnX, y=ibtnY, height=ibtnH)
+			ibtnH = objButton.winfo_reqheight()
+			self.dictWidgets["AMPM"].append(objButton)
 
-		# Minute heading
-		iX += iW + 30
-		objLabel = objLibTK.Label(objWindow, text="Minute", anchor="center", foreground=self.colourFg, background=self.colourBg)
-		objLabel.place(x=iX, y=iY, width=iW, height=itxtH)
+			ibtnY += ibtnH
+		# End of for loop
+
+		# Set current time period
+		fCurrentTime = objLibCurrentTime()
+		strHour = objLibDateTime.fromtimestamp(fCurrentTime).strftime("%H")
+		if int(strHour) > 12:
+			self.strCurTimePeriod = "PM"
+			self.dictWidgets["AMPM"][1].config(relief="sunken")
+		else:
+			self.strCurTimePeriod = "AM"
+			self.dictWidgets["AMPM"][0].config(relief="sunken")
+		# End of if
+
+		# ------------------------- Time display -------------------------
+		ilbTimeY = ibtnY + iPad
+		ilbTimeW = 100
+
+		strTime = "".join(["(00:00 ", self.strCurTimePeriod,")"])
+		objLabel = objLibTK.Label(master=objfrBorder, text=strTime, font=self.strFont)
+		ilbW = objLabel.winfo_reqwidth()
+
+		ilbTimeX = int(((ibtnWH + ilbW) / 2) - (ilbW / 2))
+		objLabel.place(x=ilbTimeX, y=ilbTimeY)
+		ilbH = objLabel.winfo_reqheight()
+		self.dictWidgets["TimeString"] = objLabel
+
+		# ------------------------- Number pad -------------------------
+		iNumPadX = iPad
+		iNumPadY = ilbTimeY + ilbH + iPad
+		self.dictWidgets["Numpad"] = []
+
+		for iCount in range(10):
+			if iCount == 9:
+				iValue = 0
+			else:
+				iValue = iCount + 1
+			# End of if
+
+			# Center last button
+			if iValue == 0:
+				iNumPadX += ibtnWH
+			# End of if
+
+			objButton = objLibTK.Button(objfrBorder, text=iValue, font=self.strFont, padx=iPad, pady=iPad,
+										command=lambda iValue=iValue: self.UpdateTime(iValue))
+
+			if iCount == 0:
+				ibtnWH = objButton.winfo_reqwidth()
+			# End of if
+			objButton.place(x=iNumPadX, y=iNumPadY, width=ibtnWH, height=ibtnWH)
+			if iValue == 0:
+				self.dictWidgets["Numpad"].insert(0, objButton)
+			# End of if
+
+			if (iValue % 3) == 0:
+				iNumPadX = iPad
+				iNumPadY += ibtnWH
+			else:
+				iNumPadX += ibtnWH
+			# End of if
+		# End of if
 
 		# ------------------------- Buttons -------------------------
-		ibtnW = 75
-		ibtnX = int(iWinW / 2) - ibtnW - 10
-		ibtnY = iY + itxtH + 20
+		ibtnX = iPad
+		ibtnY = iNumPadY + iPad
+		ibtnW = int(ibtnWH * 1.8)
+		self.dictWidgets["Buttons"] = []
 
-		objButton = objLibTK.Button(objWindow, text="Done", foreground=self.colourFg, background=self.colourBg, activeforeground=self.colourFg, activebackground=self.colourBg, command=lambda: self.HandlerbtnDone())
-		objButton.place(x=ibtnX, y=ibtnY, width=ibtnW, height=itxtH)
+		dictInfo = {
+			"Names": ["Done", "Cancel"],
+			"Functions": [self.HandlerbtnDone, self.Exit]
+		}
+		for iIndex in range(len(dictInfo["Names"])):
+			strName = dictInfo["Names"][iIndex]
 
-		ibtnX += ibtnW + 20
-		objButton = objLibTK.Button(objWindow, text="Cancel", foreground=self.colourFg, background=self.colourBg, activeforeground=self.colourFg, activebackground=self.colourBg, command=lambda: self.HandlerbtnCancel())
-		objButton.place(x=ibtnX, y=ibtnY, width=ibtnW, height=itxtH)
+			objButton = objLibTK.Button(objfrBorder, text=strName, font=self.strFont,
+										command=dictInfo["Functions"][iIndex])
+			objButton.place(x=ibtnX, y=ibtnY, width=ibtnW)
+			self.dictWidgets["Buttons"].append(objButton)
+			ibtnH = objButton.winfo_reqheight()
+
+			ibtnX += ibtnW + iPad
+		# End of for loop
 
 		# ------------------------- Window -------------------------
+		iWinW = ibtnX + (iPad * 2)
+		iWinH = ibtnY + ibtnH + (iPad * 2)
 
-		# Bind to Esc key press
-		objWindow.bind("<Escape>", lambda _: self.HandlerbtnCancel())
-		objWindow.protocol("WM_DELETE_WINDOW", self.HandlerbtnCancel)
+		# Border
+		objfrBorder.place(x=0, y=0, width=iWinW, height=iWinH)
 
-		iWinH = ibtnY + itxtH + 20
-
-		# Place widgets
-		self.objHdrLabel.place(x=5, y=5, width=iWinW-10, height=itxtH)
-		objBorder.place(x=0, y=0, width=iWinW, height=iWinH)
-
-		# Get coordinates
-		self.objParentWindow.update()
-		iX = self.objParentWindow.winfo_rootx()
-		iW = self.objParentWindow.winfo_width()
-		iX += int(iW / 2)- int(iWinW / 2)
-		if iX < 0:
-			iX = 0
+		# Calculate window location
+		if iWinX == -1:
+			objParentWindow.update()
+			iWinX = objParentWindow.winfo_x()
+			iWinX += int((objParentWindow.winfo_width() / 2) - (iWinW / 2))
+			if iWinX < 0:
+				iWinX = 0
+			elif iWinX > self.iScrW:
+				iWinX -= (iWinX - self.iScrW)
+			# End of if
+		# End of if
+		if iWinY == -1:
+			objParentWindow.update()
+			iWinY = objParentWindow.winfo_y()
+			iWinY += int((objParentWindow.winfo_height() / 2) - (iWinH / 2))
+			if iWinY < 0:
+				iWinY = 0
+			elif iWinY > self.iScrH:
+				iWinY -= (iWinY - self.iScrH)
+			# End of if
 		# End of if
 
-		self.objParentWindow.update()
-		iY = self.objParentWindow.winfo_rooty()
-		iH = self.objParentWindow.winfo_height()
-		iScrH = objWindow.winfo_screenheight()
-		iY += int(iH / 2)- int(iWinH / 2)
-		if (iY + iWinH) > iScrH:
-			iY = iScrH - iWinH
-		# End of if
+		objWindow.wm_overrideredirect(True)
+		objWindow.bind('<Key>', self.HandlerKeystroke)
+		objWindow.bind("<Escape>", lambda _: self.Exit())
+		objWindow.protocol("WM_DELETE_WINDOW", self.Exit)
 
-		strWinDim = "".join([str(iWinW), "x", str(iWinH), "+", str(iX), "+", str(iY)])
+		strWinDim = "".join([str(iWinW), "x", str(iWinH), "+", str(iWinX), "+", str(iWinY)])
 		objWindow.geometry(strWinDim)
-
 		objWindow.deiconify()
 		objWindow.focus_force()
-		objWindow.wait_visibility()
-		objWindow.grab_set()
 
-		self.objParentWindow.wait_window(objWindow)
-		objWindow.grab_release()
-	# End of ShowWidget()
-
-	def HandlerbtnCancel(self):
-		self.objWindow.destroy()
-	# End of HandlerbtnCancel()
+		objParentWindow.wait_window(objWindow)
+		objParentWindow.focus_force()
+		return self.strTime
+	# End of Show()
 
 	def HandlerbtnDone(self):
-		# Get time
-		iHour = int(self.txtHour.GetValue() or 0)
-		iMinute = int(self.txtMinute.GetValue() or 0)
-		strDayPart = self.cbDayPart.get()
-
-		# Zero pad
-		strHour = f"{iHour:02}"
-		strMinute = f"{iMinute:02}"
-
-		# Form time
-		strTime = "".join([strHour, ":", strMinute, strDayPart])
-
-		# Check if time is valid
-		try:
-			objLibDateTime.datetime.strptime(strTime, "%I:%M%p")
-			bError = False
-		except:
-			bError = True
-		# End of try / except
-
-		if bError:
-			self.objHdrLabel["text"] = "Invalid date! Enter valid date."
-			self.objHdrLabel.configure(foreground="#FF9B9B")
-			self.objWindow.focus_force()
-		else:
-			# Callback
-			objThread = objLibThreading.Thread(target=self.objCallback, args=(strTime, ))
-			objThread.start()
-			self.objWindow.destroy()
-		# End of if
+		strHour = str(f'{self.iHour:02}')
+		strMinute = str(f'{self.iMinute:02}')
+		self.strTime = "".join([strHour, ":", strMinute, " ", self.strCurTimePeriod])
+		self.objWindow.grab_release()
+		self.objWindow.destroy()
 	# End of HandlerbtnDone()
 
-	def HandlerIconClick(self):
-		self.ShowWidget()
-	# End of HandlerClock()
+	def HandlerbtnTime(self, strFocus):
+		self.strCurTimeFocus = strFocus
+		if strFocus.find("Hour") == 0:
+			self.bResetFlow = True
+		# End of if
+	# End of HandlerbtnTime()
+
+	def HandlerKeystroke(self, objEvent):
+		for x in range(1):
+			cKey = objEvent.char
+			if not cKey.isdigit():
+				break
+			# End of if
+
+			self.UpdateTime(int(cKey))
+		# End of for loop
+	# End of HandlerKeystroke()
+
+	def Exit(self):
+		self.Reset()
+		self.objWindow.grab_release()
+		self.objWindow.destroy()
+	# End of Exit()
+
+	def Reset(self):
+		self.strCurTimePeriod = "AM"
+		self.strCurTimeFocus = "Hour"
+		self.bResetFlow = False
+		self.iHour = 0
+		self.iMinute = 0
+		self.strTime = ""
+		self.dictWidgets.clear()
+	# End of Reset()
+
+	def ToggleAMPM(self, strPeriod):
+		for x in range(1):
+			if self.strCurTimePeriod.find(strPeriod) == 0:
+				break
+			# End of if
+
+			if self.strCurTimePeriod.find("AM") == 0:
+				# Change to PM
+				objWidget = self.dictWidgets["AMPM"][1]
+				objWidget.config(relief="sunken")
+				objWidget = self.dictWidgets["AMPM"][0]
+				objWidget.config(relief="raised")
+				self.strCurTimePeriod = "PM"
+			else:
+				# Change to AM
+				objWidget = self.dictWidgets["AMPM"][0]
+				objWidget.config(relief="sunken")
+				objWidget = self.dictWidgets["AMPM"][1]
+				objWidget.config(relief="raised")
+				self.strCurTimePeriod = "AM"
+			# End of if
+
+			self.UpdateTime(-1)
+		# End of for loop
+	# End of ToggleAMPM()
+
+	def UpdateTime(self, iNumber):
+		for x in range(1):
+			# Update AM / PM only
+			if iNumber == -1:
+				break
+			# End of if
+
+			# Update hour
+			if self.strCurTimeFocus.find("Hour") == 0:
+				if self.bResetFlow:
+					self.iHour = iNumber
+					self.bResetFlow = False
+					break
+				# End of if
+
+				iNewHour = (self.iHour * 10) + iNumber
+				if iNewHour < 13:
+					self.iHour = iNewHour
+					break
+				# End of if
+
+				# Fall through
+				self.strCurTimeFocus = "Minute"
+			# End of if
+
+			iNewMinute = (self.iMinute * 10) + iNumber
+			if iNewMinute < 60:
+				self.iMinute = iNewMinute
+			else:
+				self.iMinute = iNumber
+			# End of if
+		# End of for loop
+
+		# Update time string
+		strHour = str(f'{self.iHour:02}')
+		strMinute = str(f'{self.iMinute:02}')
+		strTime = "".join(["(", strHour, ":", strMinute, " ", self.strCurTimePeriod, ")"])
+		objWidget = self.dictWidgets["TimeString"]
+		objWidget["text"] = strTime
+
+		# Update time
+		objWidget = self.dictWidgets["Time"][0]
+		objWidget["text"] = strHour
+		objWidget = self.dictWidgets["Time"][1]
+		objWidget["text"] = strMinute
+	# End of UpdateTime()
 # End of class clTimePicker
