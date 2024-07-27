@@ -9,24 +9,40 @@
 #
 # Enhancement : 27-Jun-2024 : 1. Redesigned to ensure reading and writing is non-blocking
 #							  2. Added code to ensure that Read() returns exactly the same chunk of data written by each Write()
+# Enhancement : 26-Jul-2025 : 1. Revamped logic
+# 							  2. Added blocking and non-blocking read and write calls
 #
 
 import os as objLibOS
 import queue as objLibQueue
 import threading as objLibThreading
+import time as objLibTime
 
 class clNamedPipe:
-	def __init__(self, strPipeName="sdNamedPipe"):
+	def __init__(self, strConnectionMode, strIOMode, strPipeName="sdNamedPipe"):
+		'''
+		strConnectionMode = "Client"|"Server"
+		strIOMode = "Blocking"|"NonBlocking"
+		'''
+		self.strConnectionMode = strConnectionMode
+		self.strIOMode = strIOMode
 		self.strPipeName = strPipeName
-		self.strBuffer = ""
-		self.iCount = 0
-		self.strType = ""
-		self.strSignature = "|!@#$%|"
+		self.iDataQCount = 0
+		self.objLock = objLibThreading.Lock()
 
-		# Create queues abd thread
-		self.objMessageQ = objLibQueue.Queue()
-		self.objPipeQ = objLibQueue.Queue()
-		objLibThreading.Thread(target=self.ThreadPipeIO, daemon=True).start()
+		# Create pipe if not present
+		try:
+			objLibOS.mkfifo(self.strPipeName)
+		except:
+			pass
+		# End of try / except
+
+		# Queue
+		self.objPipeQueue = objLibQueue.Queue()
+		self.objDataQueue = objLibQueue.Queue()
+
+		# Thread
+		objLibThreading.Thread(target=self.PipeThread, daemon=True).start()
 	# End of __init__()
 
 	def CleanUp(self):
@@ -36,124 +52,99 @@ class clNamedPipe:
 		# End of if
 	# End of CleanUp()
 
-	def Client(self):
-		self.strType = "Client"
-	# End of Client()
-
-	def GetData(self):
-		for x in range(1):
-			strResult = ""
-			strData = ""
-			if self.iCount != 0:
-				strData = self.objMessageQ.get()
-				self.objMessageQ.task_done()
-				self.iCount -= 1
-			# End of if
-
-			# Add data to previously read data if any
-			self.strBuffer = "".join([self.strBuffer, strData])
-
-			# Get location of first and second signature
-			iStartSig = self.strBuffer.find(self.strSignature)
-			if iStartSig == -1:
-				break
-			# End of if
-
-			iEndSig = self.strBuffer.find(self.strSignature, iStartSig+1)
-			if iEndSig == -1:
-				break
-			# End of if
-
-			# Get resulting string between signatures
-			strResult = self.strBuffer[iStartSig+len(self.strSignature):iEndSig]
-
-			# Add left over data to buffer
-			self.strBuffer = self.strBuffer[iEndSig+len(self.strSignature):]
-		# End of for loop
-
-		return strResult
-	# End of Client()
-
 	def Peek(self):
-		bResult = False
-		if len(self.strBuffer) > 0 or self.iCount > 0:
-			bResult = True
-		# End of if
-
-		return bResult
+		return self.iDataQCount
 	# End of Client()
 
 	def Read(self):
-		strResult = ""
 		for x in range(1):
-			if self.strType == "Server":
-				strResult = "Error : Only clients can read from the pipe"
+			strData = ""
+
+			if self.strConnectionMode.find("Server") == 0:
+				strData = "ERROR: Server cannot read from pipe"
 				break
 			# End of if
 
-			self.objPipeQ.put(["Read", strResult])
-			if self.iCount == 0 and len(self.strBuffer) == 0:
+			if self.strIOMode.find("Blocking") == 0:
+				strData = self.objDataQueue.get()
+				self.objDataQueue.task_done()
+
+				self.objLock.acquire()
+				self.iDataQCount -= 1
+				self.objLock.release()
 				break
 			# End of if
 
-			strResult = self.GetData()
+			# Non-blocking
+			if self.iDataQCount > 0:
+				strData = self.objDataQueue.get()
+				self.objDataQueue.task_done()
+
+				self.objLock.acquire()
+				self.iDataQCount -= 1
+				self.objLock.release()
+			# End of if
 		# End of for loop
 
-		return strResult
-	# End of Read()
+		return strData
+	# End of ReadBlocking()
 
-	def Server(self):
-		self.strType = "Server"
-		self.CleanUp()
-
-		# Create pipe
-		objLibOS.mkfifo(self.strPipeName)
-	# End of Server()
-
-	def ThreadPipeIO(self):
+	def PipeThread(self):
 		while 1:
-			arrValue = self.objPipeQ.get()
-			self.objPipeQ.task_done()
-
-			if arrValue[0] == "Read":
-				try:
+			match self.strConnectionMode:
+				case "Client":
 					with open(self.strPipeName, "r") as objPipe:
-						strMessage = objPipe.read()
-						self.iCount += 1
+						strData = objPipe.read()
 					# End of with
-				except:
-					pass
-				# End of try / except
-				self.objMessageQ.put(strMessage)
-			# End of if
 
-			if arrValue[0] == "Write":
-				try:
+					self.objLock.acquire()
+					self.iDataQCount += 1
+					self.objLock.release()
+
+					self.objDataQueue.put(strData)
+				# End of case
+
+				case "Server":
+					strData = self.objPipeQueue.get()
+					self.objPipeQueue.task_done()
+
 					with open(self.strPipeName, "w") as objPipe:
-						objPipe.write(arrValue[1])
-						objPipe.flush()
+						strMessage = objPipe.write(strData)
 					# End of with
-				except:
-					pass
-				# End of try / except
-			# End of if
-		# End of while loop
+
+					self.objLock.acquire()
+					self.iDataQCount -= 1
+					self.objLock.release()
+
+					if self.strIOMode.find("Blocking") == 0:
+						self.objDataQueue.put("Done")
+					# End of if
+				# End of case
+			# End of match
+		# End of while
 	# End of ThreadPipeIO()
 
 	def Write(self, strMessage):
 		for x in range(1):
-			if self.strType == "Client":
-				strResult = "Error : Only servers can write to the pipe"
+			strError = ""
+
+			if self.strConnectionMode.find("Client") == 0:
+				strData = "ERROR: Client cannot write to pipe"
+				break
 			# End of if
 
-			# Add signature to message so that read sends back exactly the same amount of data to reader
-			strMessage = "".join([self.strSignature, strMessage, self.strSignature])
+			self.objLock.acquire()
+			self.iDataQCount += 1
+			self.objLock.release()
 
-			self.objMessageQ.put(strMessage)
-			self.objPipeQ.put(["Write", strMessage])
-			strResult = "Success"
-		# Emd of for loop
+			self.objPipeQueue.put(strMessage)
 
-		return strResult
-	# End of Write()
+			if self.strIOMode.find("Blocking") == 0:
+				self.objDataQueue.get()
+				self.objDataQueue.task_done()
+			# End of if
+		# End of for loop
+
+		return strError
+	# End of WriteBlocking()
 # End of class clPipe
