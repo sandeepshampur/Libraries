@@ -3,8 +3,11 @@
 #
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
-# Fix : 19-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
+# Fix 		  : 19-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
+# Enhancement : 30-Jul-2024 : Added function "ReplaceMessage()"
 #
+
+from re import sub as objRESub
 import tkinter as objLibTK
 
 class clTooltip:
@@ -99,24 +102,6 @@ class clTooltip:
 		return bError
 	# End of IsError()
 
-	def SetMessage(self, strMessage=""):
-		for x in range(1):
-			self.strMessage = strMessage
-			if len(strMessage) == 0:
-				self.CloseTip()
-				break
-			# End of if
-
-			# Get label dimensions
-			if self.lbMessage is not None:
-				self.lbMessage["text"] = self.strMessage
-				self.lbMessage.update()
-				self.ilbTTW = self.lbMessage.winfo_width() + 8
-				self.ilbTTH = self.lbMessage.winfo_height() + 8
-			# End of if
-		# End of for loop
-	# End of SetMessage()
-
 	def RemoveMessage(self, strMessage):
 		for x in range(1):
 			self.strMessage = self.strMessage.replace(strMessage, "")
@@ -138,7 +123,50 @@ class clTooltip:
 		# End of for loop
 	# End of RemoveMessage()
 
-	def ShowTip(self, objEvent):
+	def ReplaceMessage(self, strRegEx, strNewMessage):
+		for x in range(1):
+			if len(strRegEx) == 0:
+				break
+			# End of if
+
+			if len(self.strMessage) == 0:
+				self.strMessage = strNewMessage
+			# End of if
+
+			self.strMessage = objRESub(strRegEx, strNewMessage, self.strMessage)
+
+			self.strMessage = self.strMessage.replace("\n\n", "\n")
+			self.strMessage = self.strMessage.strip()
+
+			# Get label dimensions
+			if self.lbMessage is not None:
+				self.lbMessage["text"] = self.strMessage
+				self.lbMessage.update()
+				self.ilbTTW = self.lbMessage.winfo_width() + 8
+				self.ilbTTH = self.lbMessage.winfo_height() + 8
+			# End of if
+		# End of for loop
+	# End of ReplaceMessage()
+
+	def SetMessage(self, strMessage=""):
+		for x in range(1):
+			self.strMessage = strMessage
+			if len(strMessage) == 0:
+				self.CloseTip()
+				break
+			# End of if
+
+			# Get label dimensions
+			if self.lbMessage is not None:
+				self.lbMessage["text"] = self.strMessage
+				self.lbMessage.update()
+				self.ilbTTW = self.lbMessage.winfo_width() + 8
+				self.ilbTTH = self.lbMessage.winfo_height() + 8
+			# End of if
+		# End of for loop
+	# End of SetMessage()
+
+	def ShowTip(self, objEvent=None):
 		for x in range(1):
 			if len(self.strMessage) == 0:
 				break
