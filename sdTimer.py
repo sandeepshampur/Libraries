@@ -1,51 +1,62 @@
+#
 # Completed : 03-December-2021
+#
+# Enhancement	: 30-Jul-2024 : Revamped logic
+#
 
 import threading as objLibThreading
 
 # https://stackoverflow.com/questions/474528/what-is-the-best-way-to-repeatedly-execute-a-objFunction-every-x-seconds
 class clTimer:
-	def __init__(self, iInterval, objFunction, *args, **kwargs):
-		self.Timer = None
-		self.iInterval = iInterval
+	def __init__(self, objFunction, iInterval=0, *args):
 		self.objFunction = objFunction
+		self.iInterval = iInterval
 		self.args = args
-		self.kwargs = kwargs
-		self.bRunning = False
+
+		self.Timer = None
+		self.bTimerOn = False
+		self.objLock = objLibThreading.Lock()
 	# End of __init__()
-	
-	def LaunchCallbackFunction(self):
-		objThread = objLibThreading.Thread(target=self.objFunction, args=self.args, kwargs=self.kwargs)
-		objThread.start()
-	# End of LaunchCallbackFunction()
+
+	def GetArgs(self):
+		return self.args
+	# End of GetArgs()
 
 	def Run(self):
-		self.bRunning = False
-		if self.iInterval > 0:
-			self.Start()
-		# End of if
-		self.LaunchCallbackFunction()		
+		self.objLock.acquire() # Lock
+		self.bTimerOn = False
+		self.objLock.release() # Unlock
+		self.objFunction(*self.args)
 	# End of Run()
-	
+
+	def SetArgs(self, *args):
+		self.args = args
+	# End of SetArgs()
+
 	def SetInterval(self, iInterval):
-		self.Stop()
-		if iInterval >= 0:
+		if self.iInterval != iInterval:
+			self.Stop()
 			self.iInterval = iInterval
 			self.Start()
 		# End of if
 	# End of SetInterval()
 
 	def Start(self):
-		if not self.bRunning:
+		if not self.bTimerOn:
+			self.objLock.acquire() # Lock
 			self.Timer = objLibThreading.Timer(self.iInterval, self.Run)
+			self.bTimerOn = True
 			self.Timer.start()
-			self.bRunning = True
+			self.objLock.release() # Unlock
 		# End of if
 	# End of start()
 
 	def Stop(self):
-		if self.bRunning:
+		self.objLock.acquire() # Lock
+		if self.Timer is not None:
 			self.Timer.cancel()
-			self.bRunning = False
-		 # End of if
+			self.bTimerOn = False
+		# End of if
+		self.objLock.release() # Unlock
 	# End of Stop()
 # End of class clTimer
