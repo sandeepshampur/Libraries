@@ -1,10 +1,13 @@
 #
 # Completed : 20-December-2021
 #
-# Fix : 23-Mar-2022 : Added "WriteQ" to allow time to write to file
+# Fix 		  : 23-Mar-2022 : Added "WriteQ" to allow time to write to file
+# Enhancement : 31-Jul-2024 : 1. Add "ExtendedInterpolation" feature for reading INI file
+#							  2. Revamped logic
 #
 
 from configparser import ConfigParser as objLibConfigParser
+from configparser import ExtendedInterpolation as optExtendedInterpolation
 import os as objLibOS
 import queue as objLibQueue
 import threading as objLibThreading
@@ -12,19 +15,11 @@ import threading as objLibThreading
 class clIniParser:
 	def __init__(self, strIniFile):
 		self.strIniFile = strIniFile
-		self.bReplaceSection = True		
-		
+
 		# Read ini file
-		self.objIniParser = objLibConfigParser()
+		self.objIniParser = objLibConfigParser(interpolation=optExtendedInterpolation())
 		self.objIniParser.optionxform = str
 		self.objIniParser.read(self.strIniFile)
-		
-		# Initialise queues
-		self.IniQ = objLibQueue.Queue()
-		self.WriteQ = objLibQueue.Queue()
-		
-		# Start writer daemon thread
-		objLibThreading.Thread(target=self.Thread, daemon=True).start()
 	# End of __init__()
 
 	def GetItem(self, strSection, strKey=""):
@@ -45,9 +40,19 @@ class clIniParser:
 			# End of try / except
 		
 		return strValue
-	# End of Read()
+	# End of GetItem()
 	
 	def ParseValue(self, strValue, strDelimeter="|-|"):
+		'''
+		Creates dictionary based on delimeter
+		E.g. INI entry: "img=Notepad.png|-|type=shell|-|check=no|-|path=gedit"
+			 dictionary : {
+			 	"img": "Notepad.png",
+			 	"type": "shell",
+			 	"check": "no",
+			 	"path": "gedit"
+			 }
+		'''
 		dictValue = {}
 		arrValue = strValue.split(strDelimeter)
 		
@@ -60,47 +65,41 @@ class clIniParser:
 		return dictValue
 	# End of ParseValue()
 
-	def SetItems(self, arrValues=[], bReplaceSection=True):
-		self.bReplaceSection = bReplaceSection
-		self.IniQ.put(arrValues)
-	# End of WriteItems()
-	
 	def SaveToFile(self):
-		self.IniQ.put([[""]])
-		self.WriteQ.get()
-		self.WriteQ.task_done()
+		objFile = open(self.strIniFile, "w")
+		self.objIniParser.write(objFile, space_around_delimiters=False)
+		objFile.flush()
+		objFile.close()
 	# End of SaveToFile()
-	
-	def Thread(self):
-		while 1:
-			arrValues = self.IniQ.get()
-			self.IniQ.task_done()
-			strSection = arrValues[0][0]
-			
-			for x in range(1):
-				# Check if this is to write to file
-				if len(strSection) == 0:
-					objFile = open(self.strIniFile, "w")
-					self.objIniParser.write(objFile, space_around_delimiters=False)
-					objFile.close()
-					self.WriteQ.put("Done")
-					break
-				# End of if
 
-				# Delete section if required
-				if self.bReplaceSection and (self.objIniParser.has_section(strSection)):
-					self.objIniParser.remove_section(strSection)
-				# End of if
-				
-				# Add section if not prsent
-				if not self.objIniParser.has_section(strSection):
-					self.objIniParser.add_section(str(strSection))
-				# End of if
+	def SetItem(self, strSection, strKey, strValue):
+		# Add section if not prsent
+		if not self.objIniParser.has_section(strSection):
+			self.objIniParser.add_section(str(strSection))
+		# End of if
 
-				for arrValue in arrValues:
-					self.objIniParser.set(str(arrValue[0]), str(arrValue[1]), str(arrValue[2]))
-				# End of for loop			
-			# End of for loop
-		# End of while loop
-	# End of Thread()
+		self.objIniParser.set(str(strSection), str(strKey), str(strValue))
+	# End of SetItem()
+
+	def SetItems(self, strSection, arrKeyValuePairs, bReplaceSection=False):
+		'''
+		arrKeyValuePairs = [
+						["Key", "Value"],
+						...
+					]
+		'''
+		# Delete section if required
+		if bReplaceSection and (self.objIniParser.has_section(strSection)):
+			self.objIniParser.remove_section(strSection)
+		# End of if
+
+		# Add section if not prsent
+		if not self.objIniParser.has_section(strSection):
+			self.objIniParser.add_section(str(strSection))
+		# End of if
+
+		for arrKeyValuePair in arrKeyValuePairs:
+			self.objIniParser.set(str(strSection), str(arrKeyValuePair[0]), str(arrKeyValuePair[1]))
+		# End of for loop
+	# End of SetItems()
 # End of class clIniParser
