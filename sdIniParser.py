@@ -2,7 +2,7 @@
 # Completed : 20-December-2021
 #
 # Fix 		  : 23-Mar-2022 : Added "WriteQ" to allow time to write to file
-# Enhancement : 31-Jul-2024 : 1. Add "ExtendedInterpolation" feature for reading INI file
+# Enhancement : 01-Aug-2024 : 1. Added "ExtendedInterpolation" feature for reading INI file
 #							  2. Revamped logic
 #
 
@@ -24,22 +24,47 @@ class clIniParser:
 
 	def GetItem(self, strSection, strKey=""):
 		for x in range(1):
+			# Get enitre section ------------------------------------------
 			if len(strKey) == 0:
 				try:
-					strValue = self.objIniParser.items(strSection)
+					objValue = self.objIniParser.items(strSection)
+					break
 				except:
-					strValue = []
+					pass
 				# End of try / except
+
+				# Get raw data if present
+				try:
+					objValue = self.objIniParser.items(strSection, raw=True)
+				except:
+					objValue = []
+					break
+				# End of try / except
+
+				objValue = self.ReplaceInterpolationValues(objValue)
 				break
 			# End of if
 
+			# Get only key / value pair ------------------------------------
 			try:
-				strValue = self.objIniParser.get(strSection, strKey)
+				objValue = self.objIniParser.get(strSection, strKey)
+				break
 			except:
-				strValue = ""
+				pass
 			# End of try / except
-		
-		return strValue
+
+			# Get raw data if present
+			try:
+				objValue = self.objIniParser.get(strSection, strKey, raw=True)
+			except:
+				objValue = []
+				break
+			# End of try / except
+
+			objValue = self.ReplaceInterpolationValues(objValue)
+		# End of for loop
+
+		return objValue
 	# End of GetItem()
 	
 	def ParseValue(self, strValue, strDelimeter="|-|"):
@@ -64,6 +89,46 @@ class clIniParser:
 		
 		return dictValue
 	# End of ParseValue()
+
+	def ReplaceInterpolationValues(self, objRaw):
+		for x in range(1):
+			# Handle string
+			if isinstance(objRaw, str):
+				objRaw = self.ReplaceInterpolationValuesInString(objRaw)
+				break
+			# End of if
+
+			# Handle list (array)
+			arrRaw = []
+			for tRaw in objRaw:
+				strKey = tRaw[0]
+				strValue = tRaw[1]
+				strValue = self.ReplaceInterpolationValuesInString(strValue)
+
+				arrRaw.append([strKey, strValue])
+			# End of for loop
+
+			objRaw.clear()
+			objRaw = arrRaw
+		# End of for loop
+
+		return objRaw
+	# End of ReplaceInterpolationValues()
+
+	def ReplaceInterpolationValuesInString(self, strValue):
+		while(1):
+			iStartPos = strValue.find("${")
+			iEndPos = strValue.find("}", iStartPos+1)
+
+			if (iStartPos == -1) or (iEndPos == -1):
+				break
+			# End of if
+
+			strValue = "".join([str(strValue[:iStartPos]), "<Missing>", str(strValue[iEndPos+1:])])
+		# End of while loop
+
+		return strValue
+	# End of ReplaceInterpolationValuesInString()
 
 	def SaveToFile(self):
 		objFile = open(self.strIniFile, "w")
