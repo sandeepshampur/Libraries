@@ -1,5 +1,7 @@
 #
-# Completed: 19-July-2024
+# Completed: 16-July-2024
+#
+# Fix		  : 03-Aug-2024 : Fixed code in "CreateFunctions()" for database case
 #
 
 import os as objLibOS
@@ -8,7 +10,6 @@ from os.path import join as objLibOSPathJoin
 import sdDatabase as objLibDatabase
 import sdIniParser as objLibIniParser
 import sdLogger as objLibLogger
-import sdMessageBox as objLibMessageBox
 from tkinter import font as objLibTkFont
 from tkinter import ttk as objLibTTK
 
@@ -60,13 +61,6 @@ class clCommon:
 			return
 		# End of if
 
-		if "Database" in self.dictParam["Functions"]:
-			arrEntry = self.dictParam["Functions"]["Database"]
-			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
-			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger.Log)
-			self.dictInfo["Functions"]["Logger"] = objFunction
-		# End of if
-
 		if "INI" in self.dictParam["Functions"]:
 			arrEntry = self.dictParam["Functions"]["INI"]
 			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
@@ -94,11 +88,18 @@ class clCommon:
 			self.dictInfo["Functions"]["Logger"] = objFunction
 		# End of if
 
-		if "MessageBox" in self.dictParam["Functions"]:
-			arrEntry = self.dictParam["Functions"]["MessageBox"]
-			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0])
-			objFunction = objLibMessageBox.clMessageBox(strPath)
-			self.dictInfo["Functions"]["MessageBox"] = objFunction
+		if "Database" in self.dictParam["Functions"]:
+			arrEntry = self.dictParam["Functions"]["Database"]
+			strPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[0], arrEntry[1])
+
+			if "Logger" in self.dictInfo["Functions"]:
+				objLogger = self.dictInfo["Functions"]["Logger"].Log
+			else:
+				objLogger = None
+			# End of if
+
+			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger)
+			self.dictInfo["Functions"]["Database"] = objFunction
 		# End of if
 	# End of CreateFunctions()
 
@@ -164,17 +165,16 @@ class clCommon:
 		'''
 		dictParam = {
 			"Environment": {
-				"Data": ["ControlPanel.ini"],
-				"Icons": ["About.xbm"],
-				"Img": ["About.png"],
-				"Sound": ["Battery.mp3"]
+				"Data": ["ControlPanel.ini", ...],
+				"Icons": ["About.xbm". ...],
+				"Img": ["About.png", ...],
+				"Sound": ["Battery.mp3", ...]
 			},
 			"FontSize": 10,
 			"Functions": {
 				"INI": ["Data", "ControlPanel.ini"],
 				"Logger": ["Data", "ControlPanelLogs.txt"],
 				"Database": ["Data", "ControlPanel.db"]
-				"MessageBox": ["Data"]
 			},
 			"strPath": __file__
 		}
