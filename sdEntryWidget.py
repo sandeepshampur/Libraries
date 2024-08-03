@@ -12,6 +12,8 @@
 #							  3. Added functions "SetMaxChars()", "GetBg()", "GetPlaceInfo()", "Forget()", "Place()", "GetName()", "SetName()", "Bind()"
 #
 # Fix		  : 20-Jul-2024 : Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
+# Enhancement : 03-Aug-2024 : 1. Added function "SetValueDisabled()"
+#							  2. Changed functions "GetBg()" and "SetBg()" to "GetOption()" and "SetOption()"
 #
 
 import threading as objLibThreading
@@ -176,13 +178,13 @@ class clEntryWidget:
 		self.Widget.place_forget()
 	# End of Forget()
 
-	def GetBg(self):
-		return self.Widget["background"]
-	# End of GetBg()
-
 	def GetName(self):
 		return self.strName
 	# End of GetName()
+
+	def GetOption(self, strOption):
+		return self.Widget[strOption]
+	# End of GetOption()
 
 	def GetPlaceInfo(self):
 		return self.Widget.place_info()
@@ -242,10 +244,6 @@ class clEntryWidget:
 		self.WidgetTT.SetMessage(self.tooltip)
 	# End of Reset()
 
-	def SetBg(self, strValue):
-		self.Widget.configure(background=strValue)
-	# End of SetBg()
-
 	def SetCallbackTrigger(self, bTriggerCallback):
 		self.bTriggerCallback = bTriggerCallback
 	# End of SetCallbackTrigger()
@@ -278,6 +276,10 @@ class clEntryWidget:
 	def SetName(self, strName):
 		self.strName = strName
 	# End of SetName()
+
+	def SetOption(self, strOption, strValue):
+		self.Widget[strOption] = strValue
+	# End of SetOption()
 
 	def SetRegEx(self, strRegEx):
 		strRegEx = "".join(["^", strRegEx, "$"])
@@ -318,4 +320,13 @@ class clEntryWidget:
 			self.Widget.config(validate="key")
 		# End of if
 	# End of Set()
+
+	def SetValueDisabled(self, strValue):
+		self.Widget.config(validate="none")
+		self.Widget["state"] = "normal"
+		self.Widget.delete(0, objLibTk.END)
+		self.Widget.insert(0, strValue)
+		self.Widget["state"] = "disabled"
+		self.Widget.config(validate="key")
+	# End of SetValueDisabled()
 # End of class clEntryWidget
