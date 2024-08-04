@@ -174,12 +174,20 @@ class clDatabase:
 
 			# Run query
 			match strQueryType:
+				case "FetchAll":
+					strResult = self.FetchAll(strQuery, arrQueryOptions)
+				# End of case
+
 				case "FetchOne":
 					strResult = self.FetchOne(strQuery, arrQueryOptions)
 				# End of case
 
-				case "FetchAll":
-					strResult = self.FetchAll(strQuery, arrQueryOptions)
+				case "WriteMany":
+					strResult = self.WriteMany(strQuery, arrQueryOptions)
+				# End of case
+
+				case "WriteOne":
+					strResult = self.WriteOne(strQuery, arrQueryOptions)
 				# End of case
 		# End of for loop
 
