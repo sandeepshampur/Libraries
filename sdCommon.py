@@ -2,6 +2,7 @@
 # Completed: 16-July-2024
 #
 # Fix		  : 03-Aug-2024 : Fixed code in "CreateFunctions()" for database case
+# Enhancement : 04-Aug-2024 : Added code to take INI file for database in "CreateFunctions()"
 #
 
 import os as objLibOS
@@ -25,6 +26,12 @@ class clCommon:
 			}
 	# End of __init__()
 
+	def CheckIni(self):
+		for strDir in self.dictParam["Environment"]:
+			pass
+		# End of for loop
+	# End of CheckIni()
+
 	def CheckEnvironment(self):
 		# Initialise working directory
 		strPath = objLibOS.path.abspath(self.dictParam["strPath"])
@@ -36,6 +43,11 @@ class clCommon:
 		arrError = []
 		if "Environment" in self.dictParam:
 			for strDir in self.dictParam["Environment"]:
+				if strDir.find("CheckIni") == 0:
+					self.CheckIni()
+					continue
+				# End of if
+
 				arrFiles = self.dictParam["Environment"][strDir]
 
 				for strFile in arrFiles:
@@ -98,7 +110,8 @@ class clCommon:
 				objLogger = None
 			# End of if
 
-			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger)
+			strIniPath = objLibOSPathJoin(self.strWorkingDir, arrEntry[2])
+			objFunction = objLibDatabase.clDatabase(strPath, self.strWorkingDir, objLogger, strIniPath)
 			self.dictInfo["Functions"]["Database"] = objFunction
 		# End of if
 	# End of CreateFunctions()
@@ -174,7 +187,7 @@ class clCommon:
 			"Functions": {
 				"INI": ["Data", "ControlPanel.ini"],
 				"Logger": ["Data", "ControlPanelLogs.txt"],
-				"Database": ["Data", "ControlPanel.db"]
+				"Database": ["Data", "ControlPanel.db", "Data/ControlPanelDbQueries.ini"]
 			},
 			"strPath": __file__
 		}
