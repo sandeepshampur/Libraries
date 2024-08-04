@@ -2,19 +2,50 @@
 # Started   : 28-June-2024
 # Completed : 01-July-2024
 #
+# Enhancement : 04-Aug-2024 : 1. Add functions "GetIniQuery()", "RunIniQuery()"
+#							  2. Added code to read INI file
+#
 
-from os.path import join as objOSPathJoin
+import os as objLibOS
+import sdIniParser as objLibIniParser
 import sqlite3 as objSQLite
 
 class clDatabase:
-	def __init__(self, strDBName="Database.db", strWorkingDir="", objLoggerLog=None):
+	def __init__(self, strDBName="Database.db", strWorkingDir="", objLoggerLog=None, strIniPath=""):
 		# Initialise
-		self.DbPath = objOSPathJoin(strWorkingDir, strDBName)
+		self.DbPath = objLibOS.path.join(strWorkingDir, strDBName)
 		self.objLoggerLog = objLoggerLog
+
+		self.objIniParser = None
 		self.objDatabase = None
 		self.objCursor = None
 		self.strDatabaseName = ""
+
+		if objLibOS.path.isfile(strIniPath):
+			self.objIniParser = objLibIniParser.clIniParser(strIniPath)
+		# End of if
 	# End of __init__()
+
+	def ClearDb(self):
+		self.Connect()
+
+		# Clear database
+		try:
+			strQuery = "".join(["delete from ", self.strDatabaseName])
+			self.objCursor.execute(strQuery)
+			self.objDatabase.commit()
+
+			if self.objLoggerLog is not None:
+				self.objLoggerLog("Cleared database")
+			# End of if
+		except Exception as strError:
+			if self.objLoggerLog is not None:
+				self.objLoggerLog("Exception in clearing database", strError)
+			# End of if
+		# End of try/except
+
+		self.Close()
+	# End of ClearDb()
 
 	def Close(self):
 		if self.objDatabase is not None:
@@ -93,7 +124,7 @@ class clDatabase:
 
 		self.Close()
 		return arrResult
-	# End of Read()
+	# End of FetchAll()
 
 	def FetchOne(self, strQuery, arrQueryOptions=[]):
 		# Connect to database
@@ -116,28 +147,44 @@ class clDatabase:
 
 		self.Close()
 		return arrResult
-	# End of Read()
+	# End of FetchOne()
 
-	def ClearDb(self):
-		self.Connect()
-
-		# Clear database
-		try:
-			strQuery = "".join(["delete from ", self.strDatabaseName])
-			self.objCursor.execute(strQuery)
-			self.objDatabase.commit()
-
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Cleared database")
+	def GetIniQuery(self, strSection, strKey):
+		for x in range(1):
+			strQuery = "Error"
+			if self.objIniParser is None:
+				break
 			# End of if
-		except Exception as strError:
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in clearing database", strError)
-			# End of if
-		# End of try/except
 
-		self.Close()
-	# End of ClearDb()
+			strQuery = self.objIniParser.GetItem(strSection, strKey)
+		# End of for loop
+
+		return strQuery
+	# End of GetIniQuery()
+
+	def RunIniQuery(self, strQueryType, strSection, strKey, arrQueryOptions=[]):
+		for x in range(1):
+			strResult = ["Error"]
+			if self.objIniParser is None:
+				break
+			# End of if
+
+			# Get query
+			strQuery = self.objIniParser.GetItem(strSection, strKey)
+
+			# Run query
+			match strQueryType:
+				case "FetchOne":
+					strResult = self.FetchOne(strQuery, arrQueryOptions)
+				# End of case
+
+				case "FetchAll":
+					strResult = self.FetchAll(strQuery, arrQueryOptions)
+				# End of case
+		# End of for loop
+
+		return strResult
+	# End of RunIniQuery()
 
 	def WriteMany(self, strQuery, arrRecords):
 		self.Connect()
