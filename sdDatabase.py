@@ -2,8 +2,7 @@
 # Started   : 28-June-2024
 # Completed : 01-July-2024
 #
-# Enhancement : 04-Aug-2024 : 1. Add functions "GetIniQuery()", "RunIniQuery()"
-#							  2. Added code to read INI file
+# Enhancement : 05-Aug-2024 : Revamped logic by adding INI file based query
 #
 
 import os as objLibOS
@@ -11,40 +10,44 @@ import sdIniParser as objLibIniParser
 import sqlite3 as objSQLite
 
 class clDatabase:
-	def __init__(self, strDBName="Database.db", strWorkingDir="", objLoggerLog=None, strIniPath=""):
+	def __init__(self, strDatabaseFile="Database.db", strIniFile="Database.ini", objLoggerLog=None):
 		# Initialise
-		self.DbPath = objLibOS.path.join(strWorkingDir, strDBName)
+		self.strDatabaseFile = strDatabaseFile
 		self.objLoggerLog = objLoggerLog
 
-		self.objIniParser = None
 		self.objDatabase = None
 		self.objCursor = None
-		self.strDatabaseName = ""
 
-		if objLibOS.path.isfile(strIniPath):
-			self.objIniParser = objLibIniParser.clIniParser(strIniPath)
-		# End of if
+		self.objIniParser = objLibIniParser.clIniParser(strIniFile)
 	# End of __init__()
 
 	def ClearDb(self):
-		self.Connect()
+		for x in range(1):
+			self.Connect()
+			if self.objDatabase is None:
+				break
+			# End of if
 
-		# Clear database
-		try:
-			strQuery = "".join(["delete from ", self.strDatabaseName])
-			self.objCursor.execute(strQuery)
+			strDatabaseName = self.objIniParser.GetItem("General", "DatabaseName")
+			strQuery = "".join(["delete from ", strDatabaseName])
+
+			# Clear database
+			try:
+				self.objCursor.execute(strQuery)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Exception in clearing database", strError)
+				# End of if
+				break
+			# End of try/except
+
 			self.objDatabase.commit()
+			self.Close()
 
 			if self.objLoggerLog is not None:
-				self.objLoggerLog("Cleared database")
+				self.objLoggerLog("Cleared database strDatabaseName", strDatabaseName)
 			# End of if
-		except Exception as strError:
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in clearing database", strError)
-			# End of if
-		# End of try/except
-
-		self.Close()
+		# End of for loop
 	# End of ClearDb()
 
 	def Close(self):
@@ -60,175 +63,191 @@ class clDatabase:
 	# End of Close()
 
 	def Connect(self):
-		try:
-			self.objDatabase = objSQLite.connect(self.DbPath)
+		for x in range(1):
+			try:
+				self.objDatabase = objSQLite.connect(self.strDatabaseFile)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("ERROR Exception in connecting to database", strError)
+				# End of if
+				break
+			# End of try/except
+
 			self.objCursor = self.objDatabase.cursor()
 
 			if self.objLoggerLog is not None:
-				self.objLoggerLog("Connected to database", self.DbPath)
+				self.objLoggerLog("Connected to database", self.strDatabaseFile)
 			# End of if
-		except Exception as strError:
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in connecting to database", strError)
-			# End of if
-		# End of try/except
+		# End of for loop
 	# End of Connect()
 
-	def Create(self, dictDb):
-		"""
-		dictDb = {
-			"DbName": "Database",
-			"Fields": "Field1 text, Field2 Date, Field3 integer, Field 4 real"
-		}
-		"""
-		self.strDatabaseName = dictDb["DbName"]
-		self.Connect()
+	def Create(self, strSection, strKey):
+		for x in range(1):
+			self.Connect()
+			if self.objDatabase is None:
+				break
+			# End of if
 
-		# Create query string
-		strQuery = "".join(["create table if not exists ", dictDb["DbName"], "(", dictDb["Fields"], ");"])
+			strQuery = self.objIniParser.GetItem(strSection, strKey)
 
-		# Create table
-		try:
-			self.objCursor.execute(strQuery)
+			# Create table
+			try:
+				self.objCursor.execute(strQuery)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Exception in creating database", strError)
+				# End of if
+				break
+			# End of try/except
+
 			self.objDatabase.commit()
+			self.Close()
 
 			if self.objLoggerLog is not None:
-				self.objLoggerLog("Created database dictDb:", dictDb)
+				self.objLoggerLog("Created database")
 			# End of if
-		except Exception as strError:
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in creating database", strError)
-			# End of if
-		# End of try/except
-
-		self.Close()
+		# End of for loop
 	# End of Create()
 
-	def FetchAll(self, strQuery, arrQueryOptions=[]):
-		self.Connect()
+	def FetchAll(self, strSection, strKey, arrQueryOptions=[]):
+		for x in range(1):
+			arrResult = ["Error"]
+			self.Connect()
+			if self.objDatabase is None:
+				break
+			# End of if
 
-		# Read data
-		try:
-			self.objCursor.execute(strQuery, arrQueryOptions)
+			strQuery = self.objIniParser.GetItem(strSection, strKey)
+
+			# Read data
+			try:
+				self.objCursor.execute(strQuery, arrQueryOptions)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Exception in fetching data", strError)
+				# End of if
+				break
+			# End of try/except
+
 			arrResult = self.objCursor.fetchall()
+			self.Close()
 
 			if self.objLoggerLog is not None:
 				self.objLoggerLog("Records read:", len(arrResult))
 			# End of if
-		except Exception as strError:
-			arrResult = ["Error"]
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in fetching data", strError)
-			# End of if
-		# End of try/except
+		# End of for loop
 
-		self.Close()
 		return arrResult
 	# End of FetchAll()
 
-	def FetchOne(self, strQuery, arrQueryOptions=[]):
-		# Connect to database
-		self.Connect()
-
-		# Read data
-		try:
-			self.objCursor.execute(strQuery, arrQueryOptions)
-			arrResult = self.objCursor.fetchone()
-
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Records read:", len(arrResult))
-			# End of if
-		except Exception as strError:
+	def FetchOne(self, strSection, strKey, arrQueryOptions=[]):
+		for x in range(1):
 			arrResult = ["Error"]
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in fetching data", strError)
+			self.Connect()
+			if self.objDatabase is None:
+				break
 			# End of if
-		# End of try/except
 
-		self.Close()
+			strQuery = self.objIniParser.GetItem(strSection, strKey)
+
+			# Read data
+			try:
+				self.objCursor.execute(strQuery, arrQueryOptions)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Exception in fetching data", strError)
+				# End of if
+				break
+			# End of try/except
+
+			arrResult = self.objCursor.fetchone()
+			self.Close()
+
+			if self.objLoggerLog is not None:
+				self.objLoggerLog("Records read: ",  len(arrResult))
+			# End of if
+		# End of for loop
+
 		return arrResult
 	# End of FetchOne()
 
 	def GetIniQuery(self, strSection, strKey):
-		for x in range(1):
-			strQuery = "Error"
-			if self.objIniParser is None:
-				break
-			# End of if
-
-			strQuery = self.objIniParser.GetItem(strSection, strKey)
-		# End of for loop
-
-		return strQuery
+		return self.objIniParser.GetItem(strSection, strKey)
 	# End of GetIniQuery()
 
-	def RunIniQuery(self, strQueryType, strSection, strKey, arrQueryOptions=[]):
+	def WriteMany(self, strSection, strKey, arrRecords):
+		'''
+		Structure of arrRecords
+		arrRecords = [
+			["field 1 value", "field 1 value", ...],
+			...
+		]
+		'''
 		for x in range(1):
-			strResult = ["Error"]
-			if self.objIniParser is None:
+			self.Connect()
+			if self.objDatabase is None:
 				break
 			# End of if
 
-			# Get query
 			strQuery = self.objIniParser.GetItem(strSection, strKey)
 
-			# Run query
-			match strQueryType:
-				case "FetchAll":
-					strResult = self.FetchAll(strQuery, arrQueryOptions)
-				# End of case
+			strQuestionMarks = ",".join("?" * len(arrRecords[0]))
+			arrQuery = strQuery.split("|-?-|")
+			strQuery = "".join([arrQuery[0], strQuestionMarks, arrQuery[1]])
 
-				case "FetchOne":
-					strResult = self.FetchOne(strQuery, arrQueryOptions)
-				# End of case
+			try:
+				self.objCursor.executemany(strQuery, arrRecords)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Exception in writing to database", strError)
+				# End of if
+				break
+			# End of try/except
 
-				case "WriteMany":
-					strResult = self.WriteMany(strQuery, arrQueryOptions)
-				# End of case
-
-				case "WriteOne":
-					strResult = self.WriteOne(strQuery, arrQueryOptions)
-				# End of case
-		# End of for loop
-
-		return strResult
-	# End of RunIniQuery()
-
-	def WriteMany(self, strQuery, arrRecords):
-		self.Connect()
-
-		try:
-			self.objCursor.executemany(strQuery, arrRecords)
 			self.objDatabase.commit()
+			self.Close()
 
 			if self.objLoggerLog is not None:
 				self.objLoggerLog("Records written:", len(arrRecords))
 			# End of if
-		except Exception as strError:
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in writing to database", strError)
-			# End of if
-		# End of try/except
-
-		self.Close()
+		# End of for loop
 	# End of WriteMany()
 
-	def WriteOne(self, strQuery, arrRecord):
-		self.Connect()
+	def WriteOne(self, strSection, strKey, arrRecord):
+		'''
+		Structure of arrRecord
+		arrRecord = [
+			["field 1 value", "field 1 value", ...]
+		]
+		'''
 
-		try:
-			self.objCursor.execute(strQuery, arrRecord)
+		for x in range(1):
+			self.Connect()
+			if self.objDatabase is None:
+				break
+			# End of if
+
+			strQuery = self.objIniParser.GetItem(strSection, strKey)
+
+			strQuestionMarks = ",".join("?" * len(arrRecord[0]))
+			arrQuery = strQuery.split("|-?-|")
+			strQuery = "".join([arrQuery[0], strQuestionMarks, arrQuery[1]])
+
+			try:
+				self.objCursor.execute(strQuery, arrRecord)
+			except Exception as strError:
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Exception in writing to database", strError)
+				# End of if
+				break
+			# End of try/except
+
 			self.objDatabase.commit()
+			self.Close()
 
 			if self.objLoggerLog is not None:
 				self.objLoggerLog("Record written: 1")
 			# End of if
-		except Exception as strError:
-			if self.objLoggerLog is not None:
-				self.objLoggerLog("Exception in writing to database", strError)
-			# End of if
-		# End of try/except
-
-		self.Close()
+		# End of for loop
 	# End of WriteOne()
 # End of class clDatabase
