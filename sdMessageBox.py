@@ -10,6 +10,7 @@
 # Enhancement : 27-Jul-2024 : 1. Added "font" parameter to __init__()
 #							  2. Redid logic of CreateWindow()
 #							  3. Added function StandAlone()
+# Fix		  : 07-Aug-2024 : Corrected Window width calculation in "CreateWindow()"
 
 #********************************************************************************************
 # Imports
@@ -73,6 +74,7 @@ class clMessageBox:
 		# ------------------------- Heading -------------------------
 		strFont = " ".join([self.arrFont[0], str(int(self.arrFont[1])+2), "bold"])
 		objHdrLabel = objLibTK.Label(objWindow, text=strTitle, anchor="center", font=strFont, fg=colourFg, bg=colourBg)
+		iHdrlbW = objHdrLabel.winfo_reqwidth()
 		iHdrlbH = objHdrLabel.winfo_reqheight()
 
 		# ------------------------- Message -------------------------
@@ -119,9 +121,7 @@ class clMessageBox:
 		# End of for loop
 
 		# ------------------------- Window -------------------------
-		if iMessageBoxW < ibtnX:
-			iMessageBoxW = ibtnX
-		# End of if
+		iMessageBoxW = max(iHdrlbW, iMsglbW, ibtnX) + 10
 		objWindow.wm_overrideredirect(True)
 		objWindow.bind("<Escape>", lambda _: self.HandlerbtnEsc())
 		objWindow.protocol("WM_DELETE_WINDOW", self.HandlerWinClose)
