@@ -17,6 +17,7 @@
 # Fix		  : 08-Aug-2024 : 1. Removed "SetBg()" in "GetStatus()". Removed function "SetFg()". Added function "SetBackground()"
 #							  2. Modified "SetStatus()" to take status value and set background colour
 #							  3. Modified logic in functions
+#							  4. Changed code in "HandlerValidate()" to return "Warning" when iMin and iMax do not match as it allows user to continue typing
 #
 
 import threading as objLibThreading
@@ -118,7 +119,7 @@ class clEntryWidget:
 					iValue = 0
 				# End of if
 				if (self.iMin != -1) and (iValue < self.iMin):
-					self.arrStatus[0] = "Fatal"
+					self.arrStatus[0] = "Warning"
 					self.arrStatus[1] = "".join(["Value should not be less than ", str(self.iMin)])
 					break
 					# End of if
@@ -126,7 +127,7 @@ class clEntryWidget:
 
 				# Check for maximum
 				if (self.iMax != -1) and (iValue > self.iMax):
-					self.arrStatus[0] = "Fatal"
+					self.arrStatus[0] = "Warning"
 					self.arrStatus[1] = "".join(["Value should not be greater than ", str(self.iMax)])
 					break
 					# End of if
