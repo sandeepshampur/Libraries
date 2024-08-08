@@ -54,7 +54,7 @@ class clNumberRange:
 		self.dictDim = [iWidgetW, iWidgetH]
 	# End of __init__()
 
-	def Display(self, objWindow, strHeading, iX, iY, dictValues, iW=-1, iH=-1):
+	def Display(self, objWindow, strHeading, iX, iY, dictValues={}, iW=-1, iH=-1):
 		'''
 		Structure of dictValues
 		dictValues = {
@@ -63,6 +63,11 @@ class clNumberRange:
 			"RightEditBoxValue": 0
 		}
 		'''
+		if len(dictValues) == 0:
+			dictValues["ComboboxSelection"] = self.dictDefault["ComboboxSelection"]
+			dictValues["LeftEditBoxValue"] = self.dictDefault["LeftEditBox"]["Value"]
+			dictValues["RightEditBoxValue"] = self.dictDefault["RightEditBox"]["Value"]
+		# End of if
 
 		objFrame = objLibTK.LabelFrame(objWindow, text=strHeading, font=self.strFont)
 
@@ -104,7 +109,7 @@ class clNumberRange:
 		iHeight = self.dictDim[1] if self.dictDim[1] >= iH else iH
 		objFrame.place(x=iX, y=iY, width=iWidth, height=iHeight)
 
-		return self.dictDim
+		return [iWidth, iHeight]
 	# End of Show()
 
 	def HandlerCombobox(self, objEvent=None):
