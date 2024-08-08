@@ -14,6 +14,9 @@
 # Fix		  : 20-Jul-2024 : Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
 # Enhancement : 03-Aug-2024 : 1. Added function "SetValueDisabled()"
 #							  2. Changed functions "GetBg()" and "SetBg()" to "GetOption()" and "SetOption()"
+# Fix		  : 08-Aug-2024 : 1. Removed "SetBg()" in "GetStatus()". Removed function "SetFg()". Added function "SetBackground()"
+#							  2. Modified "SetStatus()" to take status value and set background colour
+#							  3. Modified logic in functions
 #
 
 import threading as objLibThreading
@@ -49,7 +52,7 @@ class clEntryWidget:
 		self.iMax = iMax
 		self.bTriggerCallback = bTriggerCallback
 
-		self.status = ["", ""]
+		self.arrStatus = ["", "", 0] # Field [2] : It will be ("1") if user has set the error. Else it will be ("0")
 		self.strName = ""
 	# End of __init__()
 
@@ -75,8 +78,8 @@ class clEntryWidget:
 	# End of Display()
 
 	def HandlerValidate(self, iType, strValue):
-		self.status[0] = ""
-		self.status[1] = ""
+		self.arrStatus[0] = ""
+		self.arrStatus[1] = ""
 		cFg = self.errfg
 		cBg = self.errbg
 		cDFg = self.errfg
@@ -88,23 +91,23 @@ class clEntryWidget:
 
 			# Check for maximum characters
 			if (self.iMaxChars != -1) and (iLen > self.iMaxChars):
-				self.status[0] = "Fatal"
-				self.status[1] = " ".join(["Maximum allowed is", str(self.iMaxChars), "characters"])
+				self.arrStatus[0] = "Fatal"
+				self.arrStatus[1] = " ".join(["Maximum allowed is", str(self.iMaxChars), "characters"])
 				break
 			# End of if
 
 			if iLen == 0:
 				if self.emptyAllowed != "yes":
-					self.status[0] = "Warning"
-					self.status[1] = "Empty value is not valid"
+					self.arrStatus[0] = "Warning"
+					self.arrStatus[1] = "Empty value is not valid"
 					break
 				# End of if
 			else:
 				# Check for allowed characters
 				objResult = self.charsAllowed.search(strValue)
 				if not objResult:
-					self.status[0] = "Fatal"
-					self.status[1] = "".join(["Character \"", strValue[-1:], "\" is not allowed"])
+					self.arrStatus[0] = "Fatal"
+					self.arrStatus[1] = "".join(["Character \"", strValue[-1:], "\" is not allowed"])
 					break
 				# End of if
 
@@ -115,16 +118,16 @@ class clEntryWidget:
 					iValue = 0
 				# End of if
 				if (self.iMin != -1) and (iValue < self.iMin):
-					self.status[0] = "Fatal"
-					self.status[1] = "".join(["Value should not be less than ", str(self.iMin)])
+					self.arrStatus[0] = "Fatal"
+					self.arrStatus[1] = "".join(["Value should not be less than ", str(self.iMin)])
 					break
 					# End of if
 				# End of if
 
 				# Check for maximum
 				if (self.iMax != -1) and (iValue > self.iMax):
-					self.status[0] = "Fatal"
-					self.status[1] = "".join(["Value should not be greater than ", str(self.iMax)])
+					self.arrStatus[0] = "Fatal"
+					self.arrStatus[1] = "".join(["Value should not be greater than ", str(self.iMax)])
 					break
 					# End of if
 				# End of if
@@ -155,7 +158,7 @@ class clEntryWidget:
 
 		# Set widget colours and tooltip
 		self.Widget.configure(foreground=cFg, background=cBg, disabledforeground=cDFg, disabledbackground=cDBg)
-		self.WidgetTT.SetMessage(self.status[1])
+		self.WidgetTT.SetMessage(self.arrStatus[1])
 
 		# Callback function
 		if objThread is not None:
@@ -163,7 +166,7 @@ class clEntryWidget:
 		# End of if
 
 		# Determine return value
-		if self.status[0] == "Fatal":
+		if self.arrStatus[0] == "Fatal":
 			return False
 		else:
 			return True
@@ -204,31 +207,22 @@ class clEntryWidget:
 
 	def GetStatus(self):
 		iStatus = 0
-		for x in range(1):
-			# Check if empty values is allowed
-			if self.emptyAllowed == "no":
-				if self.vWidget.get() == "":
-					iStatus = 1
-					self.status[0] = "Warning"
-					self.WidgetTT.SetMessage("Empty value is not valid")
-					self.SetBg(self.errbg)
-					break
-				# End of if
-			# End of if
-
-			if self.status[0] == "Fatal":
+		match self.arrStatus[0]:
+			case "Fatal":
 				iStatus = -1
-			elif self.status[0] == "Warning":
+			# End of case
+
+			case "Warning":
 				iStatus = 1
-			# End of if
-		# End of for loop
+			# End of case
+		# End of match
 
 		return iStatus
 	# End of GetStatus()
 
 	def GetValue(self):
 		return self.vWidget.get()
-	# End of Get()
+	# End of GetValue()
 
 	def Place(self, dictPlaceInfo):
 		self.Widget.place(dictPlaceInfo)
@@ -244,18 +238,32 @@ class clEntryWidget:
 		self.WidgetTT.SetMessage(self.tooltip)
 	# End of Reset()
 
+	def SetBackground(self, strType):
+		strState = self.Widget["state"]
+
+		match strType:
+			case "Normal":
+				if strState.find("normal") == 0:
+					self.Widget.configure(background=self.bg)
+				else:
+					self.Widget.configure(background=self.dbg)
+				# End of if
+			# End of case
+
+			case "Error":
+				self.Widget.configure(background=self.errbg)
+			# End of case
+		# End of match
+	# End of SetBackground()
+
 	def SetCallbackTrigger(self, bTriggerCallback):
 		self.bTriggerCallback = bTriggerCallback
 	# End of SetCallbackTrigger()
 
-	def SetFg(self, strValue):
-		self.Widget.configure(foreground=strValue)
-	# End of SetFg()
-
 	def SetFont(self, strValue):
 		self.Widget.configure(font=strValue)
 		self.font = strValue
-	# End of SetFg()
+	# End of SetFont()
 
 	def SetFocus(self):
 		self.Widget.focus()
@@ -295,13 +303,45 @@ class clEntryWidget:
 		else:
 			self.Widget.configure(background=self.bg)
 		# End of if
-	# End of Get()
+	# End of SetState()
 
-	def SetStatus(self, strState, strTooltip):
-		self.status[0] = strState
-		self.status[1] = strTooltip
-		self.WidgetTT.SetMessage(strTooltip)
-	# End of Get()
+	def SetStatus(self, iState=0, strState="", strTooltip=""):
+		for x in range(1):
+			match iState:
+				case 0:
+					# User likes to reset error
+					if self.GetStatus() != 0:
+						if self.arrStatus[2] == 0:
+							# Ignore if it is non-user set error
+							break
+						# End of if
+
+						# Reset error
+						self.arrStatus[0] = ""
+						self.arrStatus[1] = ""
+						self.arrStatus[2] = 0
+						self.WidgetTT.SetMessage("")
+						self.SetBackground("Normal")
+					# End of if
+				# End of case
+
+				case 1|-1:
+					# User likes to set error
+					if self.GetStatus() != 0:
+						# Ignore if there is already an error
+						break
+					# End of if
+
+					# Set error
+					self.arrStatus[0] = strState
+					self.arrStatus[1] = strTooltip
+					self.arrStatus[2] = 1
+					self.WidgetTT.SetMessage(strTooltip)
+					self.SetBackground("Error")
+				# End of case
+			# End of match
+		# End of for loop
+	# End of SetStatus()
 
 	def SetTooltip(self, strMsg):
 		self.WidgetTT.SetMessage(strMsg)
@@ -319,7 +359,7 @@ class clEntryWidget:
 			self.Widget.insert(0, strValue)
 			self.Widget.config(validate="key")
 		# End of if
-	# End of Set()
+	# End of SetValue()
 
 	def SetValueDisabled(self, strValue):
 		self.Widget.config(validate="none")
