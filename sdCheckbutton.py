@@ -1,12 +1,9 @@
 #
 # Completed : 21-February-2022
 #
+# Enhencement : 09-Aug-2024 : 1. Added parameter "font" to "__init__()". Changed default value of "colourLabelBg"
+#							  2. Added code to vertically center the checkbox with respect to label height
 #
-#
-
-#********************************************************************************************
-# Imports
-#********************************************************************************************
 
 import sdCanvas as objLibCanvas
 import threading as objLibThreading
@@ -14,12 +11,14 @@ import tkinter as objLibTK
 from tkinter import ttk as objLibTTK
 
 class clCheckbutton:
-	def __init__(self, strTickMarkPath, colourTickBg="white", colourTickBgDisabled="#DCDAD5", colourLabelFg="black", colourLabelBg="white"):
+	def __init__(self, strTickMarkPath, colourTickBg="white", colourTickBgDisabled="#DCDAD5", colourLabelFg="black",
+				 colourLabelBg="#d9d9d9", font="Arial 12 normal"):
 		self.strTickMarkPath = strTickMarkPath
 		self.colourTickBg = colourTickBg
 		self.colourTickBgDisabled = colourTickBgDisabled
 		self.colourLabelBg = colourLabelBg
 		self.colourLabelFg = colourLabelFg
+		self.strFont = font
 
 		self.bChecked = True
 		self.bDisabled = False
@@ -40,8 +39,13 @@ class clCheckbutton:
 
 		# Tickmark -------------------------------------------------------------
 		# Label
-		objLabel = objLibTK.Label(objMaster, background=self.colourTickBg, borderwidth=1, relief="solid")
-		objLabel.place(x=iX, y=iY, width=iTickMarkWH, height=iTickMarkWH)
+		ilbY = iY
+		if iDescH > 0:
+			ilbY = iY + int((iDescH / 2) - (iTickMarkWH / 2))
+		# End of if
+
+		objLabel = objLibTK.Label(objMaster, background=self.colourTickBg, borderwidth=1, relief="solid", font=self.strFont)
+		objLabel.place(x=iX, y=ilbY, width=iTickMarkWH, height=iTickMarkWH)
 
 		# Canvas
 		self.objCanvas = objLibCanvas.clCanvas()
@@ -59,7 +63,8 @@ class clCheckbutton:
 		if iDescW > 0:
 			ilbX = iX + iTickMarkWH + 5
 
-			objLabel = objLibTK.Label(objMaster, text=strLabel, anchor="w", foreground=self.colourLabelFg, background=self.colourLabelBg)
+			objLabel = objLibTK.Label(objMaster, text=strLabel, anchor="w", foreground=self.colourLabelFg, background=self.colourLabelBg,
+									  font=self.strFont)
 			objLabel.place(x=ilbX, y=iY, width=iDescW, height=iDescH)
 			objLabel.bind("<Button-1>", lambda _: self.HandlerClick())
 		# End of if
