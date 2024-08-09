@@ -3,7 +3,7 @@
 #
 # Fix 		  : 12-Feb-2022 : Image creation removed from __init__() and made it dynamic
 # Fix 		  : 26-Feb-2022 : 1. Fixed code where pressing "Escape" button was not returing option as "Escape"
-#							  2. Added flag "bDisableWinClose" and function "HandlerWinClose()"
+#							  2. Added flag "bDisableWinClose" and function "_HandlerWinClose()"
 # Enhancement : 01-Mar-2022 : 1. Added border to window
 # 							  2. Added code to consider text height based on font size
 #
@@ -11,10 +11,9 @@
 #							  2. Redid logic of CreateWindow()
 #							  3. Added function StandAlone()
 # Fix		  : 07-Aug-2024 : Corrected Window width calculation in "CreateWindow()"
+# Enhancement : 09-Aug-2024 : Added default button text in "Show*()" functions
+#
 
-#********************************************************************************************
-# Imports
-#********************************************************************************************
 import os as objLibOS
 from os.path import join as objLibOSPathJoin
 import sdCanvas as objLibCanvas
@@ -39,7 +38,7 @@ class clMessageBox:
 		self.objCanvas = objLibCanvas.clCanvas()
 	# End of __init__()
 
-	def CreateWindow(self, objParentWindow, strMBType, strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg):
+	def _CreateWindow(self, objParentWindow, strMBType, strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg):
 		objWindow = objLibTK.Toplevel(objParentWindow)
 		objWindow.grab_set()
 		objWindow.withdraw()
@@ -113,7 +112,7 @@ class clMessageBox:
 		arrButtonText = [strButton1Text, strButton2Text, strButton3Text]
 		for strButtonText in arrButtonText:
 			if len(strButtonText) > 0:
-				objButton = objLibTK.Button(objWindow, text=strButtonText, command=lambda strButtonText=strButtonText: self.Handlerbtn(strButtonText))
+				objButton = objLibTK.Button(objWindow, text=strButtonText, command=lambda strButtonText=strButtonText: self._Handlerbtn(strButtonText))
 				objButton.place(x=ibtnX, y=ibtnY, width=ibtnW, height=ibtnH)
 				ibtnX += ibtnW + 10
 			# End of if
@@ -123,8 +122,8 @@ class clMessageBox:
 		# ------------------------- Window -------------------------
 		iMessageBoxW = max(iHdrlbW, iMsglbW, ibtnX) + 10
 		objWindow.wm_overrideredirect(True)
-		objWindow.bind("<Escape>", lambda _: self.HandlerbtnEsc())
-		objWindow.protocol("WM_DELETE_WINDOW", self.HandlerWinClose)
+		objWindow.bind("<Escape>", lambda _: self._HandlerbtnEsc())
+		objWindow.protocol("WM_DELETE_WINDOW", self._HandlerWinClose)
 
 		iMessageBoxH = ibtnY + ibtnH + 20
 
@@ -160,57 +159,57 @@ class clMessageBox:
 
 		objParentWindow.wait_window(objWindow)
 		objParentWindow.focus_force()
-	# End of CreateWindow()
+	# End of _CreateWindow()
 
-	def Handlerbtn(self, strBtnOption):
+	def _Handlerbtn(self, strBtnOption):
 		self.strBtnOption = strBtnOption
-		self.Exit()
-	# End of Handlerbtn()
+		self._Exit()
+	# End of _Handlerbtn()
 
-	def HandlerbtnEsc(self):
+	def _HandlerbtnEsc(self):
 		if not self.bDisableEsc:
 			self.strBtnOption = "Escape"
-			self.Exit()
+			self._Exit()
 		# End of if
-	# End of HandlerbtnEsc()
+	# End of _HandlerbtnEsc()
 
-	def HandlerWinClose(self):
+	def _HandlerWinClose(self):
 		if not self.bDisableWinClose:
 			self.strBtnOption = "Close"
-			self.Exit()
+			self._Exit()
 		# End of if
-	# End of HandlerWinClose()
+	# End of _HandlerWinClose()
 
-	def ShowError(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+	def ShowError(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="OK", strButton2Text="", strButton3Text="",
 				  colourFg="white", colourBg="#ED1B2E"):
-		self.CreateWindow(objParentWindow, "Error", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+		self._CreateWindow(objParentWindow, "Error", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
 						  colourFg, colourBg)
 		strBtnOption = self.strBtnOption
 		self.strBtnOption = ""
 		return strBtnOption
 	# End of ShowError()
 
-	def ShowInformation(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+	def ShowInformation(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="OK", strButton2Text="", strButton3Text="",
 						colourFg="white", colourBg="#65357F"):
-		self.CreateWindow(objParentWindow, "Information", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+		self._CreateWindow(objParentWindow, "Information", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
 						  colourFg, colourBg)
 		strBtnOption = self.strBtnOption
 		self.strBtnOption = ""
 		return strBtnOption
 	# End of ShowError()
 
-	def ShowQuestion(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+	def ShowQuestion(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="Yes", strButton2Text="No", strButton3Text="",
 					 colourFg="white", colourBg="#1A62C5"):
-		self.CreateWindow(objParentWindow, "Question", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+		self._CreateWindow(objParentWindow, "Question", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
 						  colourFg, colourBg)
 		strBtnOption = self.strBtnOption
 		self.strBtnOption = ""
 		return strBtnOption
 	# End of ShowError()
 
-	def ShowWarning(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="", strButton2Text="", strButton3Text="",
+	def ShowWarning(self, objParentWindow, strTitle="", strMsg="", iX=-1, iY=-1, strButton1Text="OK", strButton2Text="", strButton3Text="",
 					colourFg="black", colourBg="#FFD42A"):
-		self.CreateWindow(objParentWindow, "Warning", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
+		self._CreateWindow(objParentWindow, "Warning", strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text,
 						  colourFg, colourBg)
 		strBtnOption = self.strBtnOption
 		self.strBtnOption = ""
@@ -257,7 +256,7 @@ class clMessageBox:
 		objWindow.mainloop()
 	# End of StandAlone()
 
-	def Exit(self):
+	def _Exit(self):
 		self.objWindow.destroy()
 		self.objWindow.grab_release()
 		self.objWindow = None
