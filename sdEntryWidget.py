@@ -11,13 +11,12 @@
 #							  2. Added function to get size of widget "GetSize()"
 #							  3. Added functions "SetMaxChars()", "GetBg()", "GetPlaceInfo()", "Forget()", "Place()", "GetName()", "SetName()", "Bind()"
 #
-# Fix		  : 20-Jul-2024 : Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
-# Enhancement : 03-Aug-2024 : 1. Added function "SetValueDisabled()"
-#							  2. Changed functions "GetBg()" and "SetBg()" to "GetOption()" and "SetOption()"
-# Fix		  : 08-Aug-2024 : 1. Removed "SetBg()" in "GetStatus()". Removed function "SetFg()". Added function "SetBackground()"
-#							  2. Modified "SetStatus()" to take status value and set background colour
-#							  3. Modified logic in functions
-#							  4. Changed code in "HandlerValidate()" to return "Warning" when iMin and iMax do not match as it allows user to continue typing
+# Fix /		  : 12-Aug-2024 : 1. Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
+# Enhancement				  2. Added function "SetValueDisabled()", "SetOption()", "SetBackground()"
+#							  3. Changed functions "GetBg()" and "SetBg()" to "GetOption()"
+#							  4. Modified "SetStatus()" to take status value and set background colour
+#							  5. Modified logic in functions
+#							  6. Changed code in "_HandlerValidate()" to return "Warning" when iMin and iMax do not match as it allows user to continue typing
 #
 
 import threading as objLibThreading
@@ -29,19 +28,11 @@ import sdTooltip as objLibTooltip
 import inspect
 
 class clEntryWidget:
-	def __init__(self, value="", state="normal", font="", fg="black", bg="white", dfg="black", dbg="#DCDAD5",
-				 errfg="black", errbg="#FF9B9B", maxChars=-1, charsAllowed=".*", emptyAllowed="yes", tooltip="",
-				 callback=None, callbackargs=None, iMin=-1, iMax=-1, bTriggerCallback=True):
+	def __init__(self, strValue, strState, strFont, maxChars, charsAllowed, emptyAllowed, tooltip, callback, callbackargs, iMin, iMax, bTriggerCallback, dictColours):
 		# Save parameters
-		self.value = value
-		self.state = state
-		self.font= font
-		self.fg = fg
-		self.bg = bg
-		self.dfg = dfg
-		self.dbg = dbg
-		self.errfg = errfg
-		self.errbg = errbg
+		self.strValue = strValue
+		self.strState = strState
+		self.strFont= strFont
 		self.iMaxChars = maxChars
 		strAllowed = "".join(["^", charsAllowed, "$"])
 		self.charsAllowed = objRECompile(strAllowed)
@@ -52,39 +43,43 @@ class clEntryWidget:
 		self.iMin = iMin
 		self.iMax = iMax
 		self.bTriggerCallback = bTriggerCallback
+		self.dictColours = dictColours
 
 		self.arrStatus = ["", "", 0] # Field [2] : It will be ("1") if user has set the error. Else it will be ("0")
 		self.strName = ""
 	# End of __init__()
 
-	def Display(self, master, x=0, y=0, w=40, h=20, justify="left"):
+	def Display(self, objMaster, iX, iY, iW, iH, justify="left"):
 		# Create
 		self.vWidget = objLibStringVar()
-		self.Widget = objLibEntry(master, justify=justify, textvariable=self.vWidget, validate="key")
-		if w == -1:
-			self.Widget.place(x=x, y=y)
-		else:
-			self.Widget.place(x=x, y=y, width=w, height=h)
+		self.Widget = objLibEntry(objMaster, justify=justify, textvariable=self.vWidget, validate="key", foreground=self.dictColours["fg"],
+								  background=self.dictColours["bg"], disabledforeground=self.dictColours["dfg"],
+								  disabledbackground=self.dictColours["dbg"], font=self.strFont)
+
+		if (iW != -1) and (iH != -1):
+			self.Widget.place(x=iX, y=iY, width=iW, height=iH)
+		elif (iW == -1) and (iH == -1):
+			self.Widget.place(x=iX, y=iY)
+		elif iW == -1:
+			self.Widget.place(x=iX, y=iY, height=iH)
+		elif iH == -1:
+			self.Widget.place(x=iX, y=iY, width=iW)
 		# End of if
 		self.WidgetTT = objLibTooltip.clTooltip(self.Widget, strMessage=self.tooltip)
 
 		# Configure
-		self.Widget.configure(foreground=self.fg, background=self.bg, disabledforeground=self.dfg, disabledbackground=self.dbg)
-		if len(self.font) != 0:
-			self.Widget.configure(font=self.font)
-		# End of if
-		self.Widget.insert(0, self.value)
-		self.Widget["state"] = self.state
-		self.Widget["validatecommand"] = (self.Widget.register(self.HandlerValidate), "%d", "%P")
+		self.Widget.insert(0, self.strValue)
+		self.Widget["state"] = self.strState
+		self.Widget["validatecommand"] = (self.Widget.register(self._HandlerValidate), "%d", "%P")
 	# End of Display()
 
-	def HandlerValidate(self, iType, strValue):
+	def _HandlerValidate(self, iType, strValue):
 		self.arrStatus[0] = ""
 		self.arrStatus[1] = ""
-		cFg = self.errfg
-		cBg = self.errbg
-		cDFg = self.errfg
-		cDBg = self.errbg
+		cFg = self.dictColours["errfg"]
+		cBg = self.dictColours["errbg"]
+		cDFg = self.dictColours["errfg"]
+		cDBg = self.dictColours["errbg"]
 		objThread = None
 
 		for x in range(1):
@@ -134,10 +129,10 @@ class clEntryWidget:
 				# End of if
 			# End of if
 
-			cFg = self.fg
-			cBg = self.bg
-			cDFg = self.dfg
-			cDBg = self.dbg
+			cFg = self.dictColours["fg"]
+			cBg = self.dictColours["bg"]
+			cDFg = self.dictColours["dfg"]
+			cDBg = self.dictColours["dbg"]
 
 			# Initialise callback function
 			if not self.bTriggerCallback:
@@ -172,7 +167,7 @@ class clEntryWidget:
 		else:
 			return True
 		# End of if
-	# End of HandlerValidate()
+	# End of _HandlerValidate()
 
 	def Bind(self, strEvent, objEventHandler):
 		self.Widget.bind(strEvent, objEventHandler)
@@ -230,12 +225,12 @@ class clEntryWidget:
 	# End of Place()
 
 	def Reset(self):
-		self.Widget.configure(foreground=self.fg, background=self.bg, disabledforeground=self.dfg, disabledbackground=self.dbg)
+		self.Widget.configure(foreground=self.dictColours["fg"], background=self.dictColours["bg"], disabledforeground=self.dictColours["dfg"], disabledbackground=self.dictColours["dbg"])
 		self.Widget.config(validate="none")
 		self.Widget.delete(0, objLibTk.END)
-		self.Widget.insert(0, self.value)
+		self.Widget.insert(0, self.strValue)
 		self.Widget.config(validate="key")
-		self.Widget["state"] = self.state
+		self.Widget["state"] = self.strState
 		self.WidgetTT.SetMessage(self.tooltip)
 	# End of Reset()
 
@@ -245,14 +240,14 @@ class clEntryWidget:
 		match strType:
 			case "Normal":
 				if strState.find("normal") == 0:
-					self.Widget.configure(background=self.bg)
+					self.Widget.configure(background=self.dictColours["bg"])
 				else:
-					self.Widget.configure(background=self.dbg)
+					self.Widget.configure(background=self.dictColours["dbg"])
 				# End of if
 			# End of case
 
 			case "Error":
-				self.Widget.configure(background=self.errbg)
+				self.Widget.configure(background=self.dictColours["errbg"])
 			# End of case
 		# End of match
 	# End of SetBackground()
@@ -263,7 +258,7 @@ class clEntryWidget:
 
 	def SetFont(self, strValue):
 		self.Widget.configure(font=strValue)
-		self.font = strValue
+		self.strFont = strValue
 	# End of SetFont()
 
 	def SetFocus(self):
@@ -300,9 +295,9 @@ class clEntryWidget:
 
 		# Set widget backgound colour
 		if strState == "disabled":
-			self.Widget.configure(disabledbackground=self.dbg)
+			self.Widget.configure(disabledbackground=self.dictColours["dbg"])
 		else:
-			self.Widget.configure(background=self.bg)
+			self.Widget.configure(background=self.dictColours["bg"])
 		# End of if
 	# End of SetState()
 
