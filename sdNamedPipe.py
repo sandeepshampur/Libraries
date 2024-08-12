@@ -9,8 +9,9 @@
 #
 # Enhancement : 27-Jun-2024 : 1. Redesigned to ensure reading and writing is non-blocking
 #							  2. Added code to ensure that Read() returns exactly the same chunk of data written by each Write()
-# Enhancement : 26-Jul-2025 : 1. Revamped logic
+# Enhancement : 12-Aug-2025 : 1. Revamped logic
 # 							  2. Added blocking and non-blocking read and write calls
+#							  3. Added logging
 #
 
 import os as objLibOS
@@ -19,7 +20,7 @@ import threading as objLibThreading
 import time as objLibTime
 
 class clNamedPipe:
-	def __init__(self, strConnectionMode, strIOMode, strPipeName="sdNamedPipe"):
+	def __init__(self, strConnectionMode, strIOMode, strPipeName, objLoggerLog):
 		'''
 		strConnectionMode = "Client"|"Server"
 		strIOMode = "Blocking"|"NonBlocking"
@@ -29,6 +30,7 @@ class clNamedPipe:
 		self.strPipeName = strPipeName
 		self.iDataQCount = 0
 		self.objLock = objLibThreading.Lock()
+		self.objLoggerLog = objLoggerLog
 
 		# Create pipe if not present
 		try:
@@ -53,6 +55,9 @@ class clNamedPipe:
 	# End of CleanUp()
 
 	def Peek(self):
+		if self.objLoggerLog is not None:
+			self.objLoggerLog("self.iDataQCount:", self.iDataQCount)
+		# End of if
 		return self.iDataQCount
 	# End of Client()
 
@@ -62,6 +67,9 @@ class clNamedPipe:
 
 			if self.strConnectionMode.find("Server") == 0:
 				strData = "ERROR: Server cannot read from pipe"
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("ERROR: Server cannot read from pipe")
+				# End of if
 				break
 			# End of if
 
@@ -72,6 +80,10 @@ class clNamedPipe:
 				self.objLock.acquire()
 				self.iDataQCount -= 1
 				self.objLock.release()
+
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Blocking: self.iDataQCount", self.iDataQCount)
+				# End of if
 				break
 			# End of if
 
@@ -83,9 +95,16 @@ class clNamedPipe:
 				self.objLock.acquire()
 				self.iDataQCount -= 1
 				self.objLock.release()
+
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("Non-Blocking: self.iDataQCount", self.iDataQCount)
+				# End of if
 			# End of if
 		# End of for loop
 
+		if self.objLoggerLog is not None:
+			self.objLoggerLog("Data length: ", len(strData))
+		# End of if
 		return strData
 	# End of ReadBlocking()
 
@@ -102,6 +121,9 @@ class clNamedPipe:
 					self.objLock.release()
 
 					self.objDataQueue.put(strData)
+					if self.objLoggerLog is not None:
+						self.objLoggerLog("Thread Client: self.iDataQCount:", self.iDataQCount, "Data length: ", len(strData))
+					# End of if
 				# End of case
 
 				case "Server":
@@ -119,6 +141,10 @@ class clNamedPipe:
 					if self.strIOMode.find("Blocking") == 0:
 						self.objDataQueue.put("Done")
 					# End of if
+
+					if self.objLoggerLog is not None:
+						self.objLoggerLog("Thread Server: self.iDataQCount:", self.iDataQCount, "Data length: ", len(strData))
+					# End of if
 				# End of case
 			# End of match
 		# End of while
@@ -130,6 +156,9 @@ class clNamedPipe:
 
 			if self.strConnectionMode.find("Client") == 0:
 				strData = "ERROR: Client cannot write to pipe"
+				if self.objLoggerLog is not None:
+					self.objLoggerLog("ERROR: Client cannot write to pipe")
+				# End of if
 				break
 			# End of if
 
@@ -145,6 +174,9 @@ class clNamedPipe:
 			# End of if
 		# End of for loop
 
+		if self.objLoggerLog is not None:
+			self.objLoggerLog("Data length: ", len(strData))
+		# End of if
 		return strError
 	# End of WriteBlocking()
 # End of class clPipe
