@@ -8,7 +8,7 @@ import threading as objLibThreading
 
 # https://stackoverflow.com/questions/474528/what-is-the-best-way-to-repeatedly-execute-a-objFunction-every-x-seconds
 class clTimer:
-	def __init__(self, objFunction, iInterval=0, *args):
+	def __init__(self, objFunction, iInterval, *args):
 		self.objFunction = objFunction
 		self.iInterval = iInterval
 		self.args = args
@@ -22,29 +22,27 @@ class clTimer:
 		return self.args
 	# End of GetArgs()
 
-	def Run(self):
+	def _Run(self):
 		self.objLock.acquire() # Lock
 		self.bTimerOn = False
 		self.objLock.release() # Unlock
 		self.objFunction(*self.args)
-	# End of Run()
+	# End of _Run()
 
 	def SetArgs(self, *args):
 		self.args = args
 	# End of SetArgs()
 
 	def SetInterval(self, iInterval):
-		if self.iInterval != iInterval:
-			self.Stop()
-			self.iInterval = iInterval
-			self.Start()
-		# End of if
+		self.Stop()
+		self.iInterval = iInterval
+		self.Start()
 	# End of SetInterval()
 
 	def Start(self):
 		if not self.bTimerOn:
 			self.objLock.acquire() # Lock
-			self.Timer = objLibThreading.Timer(self.iInterval, self.Run)
+			self.Timer = objLibThreading.Timer(self.iInterval, self._Run)
 			self.bTimerOn = True
 			self.Timer.start()
 			self.objLock.release() # Unlock
