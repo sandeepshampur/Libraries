@@ -1,20 +1,23 @@
 #
-# Created:	 23-July-2024
+# Started	: 23-July-2024
+# Completed	: 24-July-2024
 #
+# Enhancement : 12-Aug-2024 : Moved colours to dictionary
 
 from datetime import datetime as objLibDateTime
-from time import time as objLibCurrentTime
+import sdTooltip as objLibTooltip
+import time as objLibTime
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
+from tkinter import messagebox
 
 class clTimePicker:
-	def __init__(self, font="Arial 12 normal", colourFg="black", colourBg="#d9d9d9", objCallback=None):
-		self.strFont = font
-		self.colourFg = colourFg
-		self.colourBg = colourBg
+	def __init__(self, strFont, dictColours, objCallback):
+		self.strFont = strFont
+		self.dictColours = dictColours
 		self.objCallback = objCallback
 
-		self.arrFont = font.split(" ")
+		self.arrFont = strFont.split(" ")
 		self.strCurTimePeriod = "AM"
 		self.strCurTimeFocus = "Hour"
 		self.bResetFlow = False
@@ -23,7 +26,7 @@ class clTimePicker:
 		self.strTime = ""
 		self.dictWidgets = {}
 		'''
-		Dictionary structure
+		Structure of self.dictWidgets
 		self.dictWidgets = {
 			"Time": [<Hour|Minute>]
 			"TimeString": <objWidget>
@@ -34,11 +37,13 @@ class clTimePicker:
 		'''
 	# End of __init__()
 
-	def Show(self, objParentWindow, iWinX=-1, iWinY=-1):
+	def Show(self, objParentWindow, iWinX=-1, iWinY=-1, bAllowPastTime=True):
+		self.bAllowPastTime = bAllowPastTime
+
 		objWindow = objLibTK.Toplevel(objParentWindow)
 		objWindow.grab_set()
 		objWindow.withdraw()
-		objWindow.configure(bg=self.colourBg)
+		objWindow.configure(bg=self.dictColours["colourBg"])
 		self.objWindow = objWindow
 
 		# Font values
@@ -53,7 +58,7 @@ class clTimePicker:
 
 		# Border
 		iPad = 10
-		objfrBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=self.colourBg)
+		objfrBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=self.dictColours["colourBg"])
 
 		# ------------------------- Time -------------------------
 		ibtnX = iPad
@@ -66,7 +71,7 @@ class clTimePicker:
 		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
 		objButton.config(relief="sunken")
 		objButton.place(x=ibtnX, y=ibtnY)
-		objButton.bind("<Button-1>", lambda _: self.HandlerbtnTime("Hour"))
+		objButton.bind("<Button-1>", lambda _: self._HandlerbtnTime("Hour"))
 		ibtnWH = objButton.winfo_reqwidth()
 		self.dictWidgets["Time"].append(objButton)
 
@@ -81,7 +86,7 @@ class clTimePicker:
 		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
 		objButton.config(relief="sunken")
 		objButton.place(x=ibtnX, y=ibtnY)
-		objButton.bind("<Button-1>", lambda _: self.HandlerbtnTime("Minute"))
+		objButton.bind("<Button-1>", lambda _: self._HandlerbtnTime("Minute"))
 		self.dictWidgets["Time"].append(objButton)
 
 		self.strCurTimeFocus = "Hour"
@@ -90,13 +95,12 @@ class clTimePicker:
 		ibtnX += ibtnWH + iPad
 		ibtnH = int(ibtnWH / 2)
 		iFontSize = int(int(self.arrFont[1]) * 0.75)
-		strFont = " ".join([self.arrFont[0], str(iFontSize), "bold"])
 		self.dictWidgets["AMPM"] = []
 
 		arrInfo = ["AM", "PM"]
 		for strPeriod in arrInfo:
 			objButton = objLibTK.Button(objfrBorder, text=strPeriod, font=strFont, padx=2, pady=2,
-										command=lambda strPeriod=strPeriod:self.ToggleAMPM(strPeriod))
+										command=lambda strPeriod=strPeriod:self._ToggleAMPM(strPeriod))
 			objButton.place(x=ibtnX, y=ibtnY, height=ibtnH)
 			ibtnH = objButton.winfo_reqheight()
 			self.dictWidgets["AMPM"].append(objButton)
@@ -105,8 +109,8 @@ class clTimePicker:
 		# End of for loop
 
 		# Set current time period
-		fCurrentTime = objLibCurrentTime()
-		strHour = objLibDateTime.fromtimestamp(fCurrentTime).strftime("%H")
+		dtCurrentTime = objLibDateTime.now()
+		strHour = dtCurrentTime.strftime("%H")
 		if int(strHour) > 12:
 			self.strCurTimePeriod = "PM"
 			self.dictWidgets["AMPM"][1].config(relief="sunken")
@@ -146,7 +150,7 @@ class clTimePicker:
 			# End of if
 
 			objButton = objLibTK.Button(objfrBorder, text=iValue, font=self.strFont, padx=iPad, pady=iPad,
-										command=lambda iValue=iValue: self.UpdateTime(iValue))
+										command=lambda iValue=iValue: self._UpdateTime(iValue))
 
 			if iCount == 0:
 				ibtnWH = objButton.winfo_reqwidth()
@@ -154,6 +158,8 @@ class clTimePicker:
 			objButton.place(x=iNumPadX, y=iNumPadY, width=ibtnWH, height=ibtnWH)
 			if iValue == 0:
 				self.dictWidgets["Numpad"].insert(0, objButton)
+			else:
+				self.dictWidgets["Numpad"].append(objButton)
 			# End of if
 
 			if (iValue % 3) == 0:
@@ -172,7 +178,7 @@ class clTimePicker:
 
 		dictInfo = {
 			"Names": ["Done", "Cancel"],
-			"Functions": [self.HandlerbtnDone, self.Exit]
+			"Functions": [self._HandlerbtnDone, self._HandlerbtnCancel]
 		}
 		for iIndex in range(len(dictInfo["Names"])):
 			strName = dictInfo["Names"][iIndex]
@@ -185,6 +191,8 @@ class clTimePicker:
 
 			ibtnX += ibtnW + iPad
 		# End of for loop
+
+		self.ButtonDoneTT = objLibTooltip.clTooltip(self.dictWidgets["Buttons"][0], strPosition="bottom-left")
 
 		# ------------------------- Window -------------------------
 		iWinW = ibtnX + (iPad * 2)
@@ -216,9 +224,9 @@ class clTimePicker:
 		# End of if
 
 		objWindow.wm_overrideredirect(True)
-		objWindow.bind('<Key>', self.HandlerKeystroke)
-		objWindow.bind("<Escape>", lambda _: self.Exit())
-		objWindow.protocol("WM_DELETE_WINDOW", self.Exit)
+		objWindow.bind('<Key>', self._HandlerKeystroke)
+		objWindow.bind("<Escape>", lambda _: self._Exit())
+		objWindow.protocol("WM_DELETE_WINDOW", self._Exit)
 
 		strWinDim = "".join([str(iWinW), "x", str(iWinH), "+", str(iWinX), "+", str(iWinY)])
 		objWindow.geometry(strWinDim)
@@ -230,47 +238,90 @@ class clTimePicker:
 		return self.strTime
 	# End of Show()
 
-	def HandlerbtnDone(self):
+	def _HandlerbtnCancel(self):
+		self.strTime = ""
+		self._Exit()
+	# End of _HandlerbtnCancel()
+
+	def _HandlerbtnDone(self):
 		strHour = str(f'{self.iHour:02}')
 		strMinute = str(f'{self.iMinute:02}')
 		self.strTime = "".join([strHour, ":", strMinute, " ", self.strCurTimePeriod])
-		self.Exit()
-	# End of HandlerbtnDone()
 
-	def HandlerbtnTime(self, strFocus):
+		for x in range(1):
+			try:
+				dtSelectedTime = objLibDateTime.strptime(self.strTime, "%I:%M %p")
+			except:
+				self.ButtonDoneTT.SetMessage("Select appropriate time in 12H format")
+				self.ButtonDoneTT.ShowTip()
+				break
+			# End of try / except
+
+			if not self.bAllowPastTime:
+				dtCurrentTime = objLibDateTime.now()
+				dtSelectedTime = dtCurrentTime.replace(hour=dtSelectedTime.hour, minute=dtSelectedTime.minute)
+
+				if dtSelectedTime < dtCurrentTime:
+					self.ButtonDoneTT.SetMessage("Time cannot be in the past")
+					self.ButtonDoneTT.ShowTip()
+					break
+				# End of if
+
+				# Fall through
+			# End of if
+
+			self._Exit()
+		# End of for loop
+	# End of _HandlerbtnDone()
+
+	def _HandlerbtnTime(self, strFocus):
 		self.strCurTimeFocus = strFocus
 		if strFocus.find("Hour") == 0:
 			self.bResetFlow = True
 		# End of if
-	# End of HandlerbtnTime()
+	# End of _HandlerbtnTime()
 
-	def HandlerKeystroke(self, objEvent):
+	def _HandlerKeystroke(self, objEvent):
+		self.ButtonDoneTT.SetMessage("")
 		for x in range(1):
 			cKey = objEvent.char
 			if not cKey.isdigit():
 				break
 			# End of if
 
-			self.UpdateTime(int(cKey))
-		# End of for loop
-	# End of HandlerKeystroke()
+			iKey = int(cKey)
 
-	def Exit(self):
-		self.Reset()
+			# Simulate button press
+			objWidget = self.dictWidgets["Numpad"][iKey]
+			objWidget.config(relief="sunken")
+			self.objWindow.after(100, self._KeyClickSimulation, objWidget)
+			#objWidget.config(relief="raised")
+
+			self._UpdateTime(iKey)
+		# End of for loop
+	# End of _HandlerKeystroke()
+
+	def _Exit(self):
+		self._Reset()
 		self.objWindow.grab_release()
 		self.objWindow.destroy()
-	# End of Exit()
+	# End of _Exit()
 
-	def Reset(self):
+	def _KeyClickSimulation(self, objWidget):
+		objWidget.config(relief="raised")
+	# End of _KeyClickSimulation()
+
+	def _Reset(self):
+		self.ButtonDoneTT.SetMessage("")
 		self.strCurTimePeriod = "AM"
 		self.strCurTimeFocus = "Hour"
 		self.bResetFlow = False
 		self.iHour = 0
 		self.iMinute = 0
 		self.dictWidgets.clear()
-	# End of Reset()
+	# End of _Reset()
 
-	def ToggleAMPM(self, strPeriod):
+	def _ToggleAMPM(self, strPeriod):
 		for x in range(1):
 			if self.strCurTimePeriod.find(strPeriod) == 0:
 				break
@@ -292,12 +343,14 @@ class clTimePicker:
 				self.strCurTimePeriod = "AM"
 			# End of if
 
-			self.UpdateTime(-1)
+			self._UpdateTime(-1)
 		# End of for loop
-	# End of ToggleAMPM()
+	# End of _ToggleAMPM()
 
-	def UpdateTime(self, iNumber):
+	def _UpdateTime(self, iNumber):
 		for x in range(1):
+			self.ButtonDoneTT.SetMessage("")
+
 			# Update AM / PM only
 			if iNumber == -1:
 				break
@@ -341,5 +394,5 @@ class clTimePicker:
 		objWidget["text"] = strHour
 		objWidget = self.dictWidgets["Time"][1]
 		objWidget["text"] = strMinute
-	# End of UpdateTime()
+	# End of _UpdateTime()
 # End of class clTimePicker
