@@ -12,9 +12,9 @@
 # Fix		  : 22-Jun-2024 : Added check in clListBoxMultiColumn->FormatDate() to leave date untouched if it is already having hyphens ("-")
 # Enhancement : 30-Jun-2024 : Added flag "bSortDescending" to choose order of sorting
 # Enhancement : 18-Jul-2024 : Added function "SelectRow()" to select a specific row
-# Enhancement : 02-Aug-2024 : 1. Added additional parameters to "__init__()" function (colours / font)
-#							  2. Modified "Insert()" to accept position to insert
-#							  3. Added function "Move()"
+# Enhancement : 12-Aug-2024 : 1. Modified "Insert()" to accept position to insert
+#							  2. Added function "Move()"
+#							  3. Moved colours to dictionary
 #
 
 import datetime as objDateTime
@@ -24,20 +24,15 @@ import tkinter as objTK
 from tkinter import ttk as objTTK
 
 class clListBoxMultiColumn:
-	def __init__(self, dictTvHdrAttrib, arrDefaultRecords=[], iSortByColumn=-1, colourFg="black", colourBg="#d9d9d9",
-				 colourHdr="#C3C3C3", tagBgEven="#f5f5f5", tagBgOdd="#dcdcff", font="Arial 11 normal", objLoggerLog=None):
+	def __init__(self, dictTvHdrAttrib, arrDefaultRecords, iSortByColumn, strFont, dictColours, objLoggerLog):
 		self.dictTvHdrAttrib = dictTvHdrAttrib
 		self.arrDefaultRecords = arrDefaultRecords
 		self.iColumnToSort = iSortByColumn
-		self.colourFg = colourFg
-		self.colourBg = colourBg
-		self.colourHdr = colourHdr
-		self.tagBgEven = tagBgEven
-		self.tagBgOdd = tagBgOdd
-		self.strFont = font
-		self.arrFont = self.strFont.split(" ")
+		self.strFont = strFont
+		self.dictColours = dictColours
 		self.objLoggerLog = objLoggerLog
 
+		self.arrFont = self.strFont.split(" ")
 		# Identify columns with date for formatting later
 		self.arrDtCol = []
 		iIndex = 0
@@ -57,16 +52,17 @@ class clListBoxMultiColumn:
 	# End of __init__()
 	
 	def Display(self, objWindow, strSelectMode, ifrX, ifrY, ifrW, ifrH, arrRecords, bSortDescending=False, strHeader=""):
-		objFrame = objTK.LabelFrame(objWindow, text=strHeader, foreground=self.colourFg, background=self.colourBg, font=self.strFont)
+		objFrame = objTK.LabelFrame(objWindow, text=strHeader, foreground=self.dictColours["colourFg"], background=self.dictColours["colourBg"], font=self.strFont)
 		self.bSortDescending = bSortDescending
 
 		# Set header background colour
 		objStyle = objTTK.Style()
 		objStyle.configure("tvResult.Treeview", background="black", fieldbackground=self.tagBgEven, font=(self.strFont))
-		objStyle.configure("tvResult.Treeview.Heading", background=self.colourHdr, font=(self.arrFont[0], self.arrFont[1], "bold"))
+		objStyle.configure("tvResult.Treeview.Heading", foreground=self.dictColours["colourFgHdr"], background=self.dictColours["colourBgHdr"],
+						   font=(self.arrFont[0], self.arrFont[1], "bold"))
 
 		self.tvRecords = clListBoxMultiColumnSort(master=objFrame, columns=self.dictTvHdrAttrib["header"], show="headings", selectmode=strSelectMode,
-												  style="tvResult.Treeview", tagBgEven=self.tagBgEven, tagBgOdd=self.tagBgOdd,
+												  style="tvResult.Treeview", tagBgEven=self.dictColours["tagBgEven"], tagBgOdd=self.dictColours["tagBgOdd"],
 												  bSortDescending=self.bSortDescending, objLoggerLog=self.objLoggerLog)
 		objRWHScr = objTTK.Scrollbar(master=objFrame, orient="horizontal", command=self.tvRecords.xview)
 		objRWHScr.grid(column=0, row=1, sticky="ew", in_=objFrame)		
