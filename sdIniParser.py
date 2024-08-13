@@ -57,7 +57,7 @@ class clIniParser:
 			try:
 				objValue = self.objIniParser.get(strSection, strKey, raw=True)
 			except:
-				objValue = []
+				objValue = ""
 				break
 			# End of try / except
 
