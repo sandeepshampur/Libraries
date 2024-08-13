@@ -252,6 +252,7 @@ class clCommon:
 		objStyle.map("TCombobox", selectforeground=[('readonly', '!focus', 'black'), ('readonly', 'focus', 'white')],
 					 selectbackground=[('readonly', '!focus', 'white')], fieldbackground=[('readonly', '!focus', 'white'),
 					('disabled', '#DCDAD5')], foreground=[('readonly', '!focus', 'black')])
+		# https://stackoverflow.com/questions/43086378/how-to-modify-ttk-combobox-fonts
 		objWindow.option_add('*TCombobox*Listbox.font', self.strFontString)
 	# End of InitialiseScreenInfo()
 
