@@ -2,7 +2,7 @@
 # Started	: 23-July-2024
 # Completed	: 24-July-2024
 #
-# Enhancement : 12-Aug-2024 : Moved colours to dictionary
+# Enhancement : 13-Aug-2024 : Moved colours to dictionary
 
 from datetime import datetime as objLibDateTime
 import sdTooltip as objLibTooltip
@@ -12,12 +12,11 @@ from tkinter import font as objLibTkFont
 from tkinter import messagebox
 
 class clTimePicker:
-	def __init__(self, strFont, dictColours, objCallback):
-		self.strFont = strFont
+	def __init__(self, arrFont, dictColours, objCallback):
+		self.arrFont = arrFont
 		self.dictColours = dictColours
 		self.objCallback = objCallback
 
-		self.arrFont = strFont.split(" ")
 		self.strCurTimePeriod = "AM"
 		self.strCurTimeFocus = "Hour"
 		self.bResetFlow = False
@@ -47,7 +46,7 @@ class clTimePicker:
 		self.objWindow = objWindow
 
 		# Font values
-		objFont = objLibTkFont.Font(family=self.arrFont[0], size=self.arrFont[1], weight=self.arrFont[2])
+		objFont = objLibTkFont.Font(family=self.arrFont[1][0], size=self.arrFont[1][1], weight=self.arrFont[1][2])
 		self.itxtH = objFont.metrics("linespace")
 		self.itxtW = objFont.measure("W")
 
@@ -66,8 +65,8 @@ class clTimePicker:
 		self.dictWidgets["Time"] = []
 
 		# Hour
-		iFontSize = int(self.arrFont[1]) * 2
-		strFont = " ".join([self.arrFont[0], str(iFontSize), "bold"])
+		iFontSize = int(self.arrFont[1][1]) * 2
+		strFont = " ".join([self.arrFont[1][0], str(iFontSize), "bold"])
 		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
 		objButton.config(relief="sunken")
 		objButton.place(x=ibtnX, y=ibtnY)
@@ -94,7 +93,7 @@ class clTimePicker:
 		# ------------------------- AM / PM -------------------------
 		ibtnX += ibtnWH + iPad
 		ibtnH = int(ibtnWH / 2)
-		iFontSize = int(int(self.arrFont[1]) * 0.75)
+		iFontSize = int(int(self.arrFont[1][1]) * 0.75)
 		self.dictWidgets["AMPM"] = []
 
 		arrInfo = ["AM", "PM"]
@@ -124,7 +123,7 @@ class clTimePicker:
 		ilbTimeW = 100
 
 		strTime = "".join(["(00:00 ", self.strCurTimePeriod,")"])
-		objLabel = objLibTK.Label(master=objfrBorder, text=strTime, font=self.strFont)
+		objLabel = objLibTK.Label(master=objfrBorder, text=strTime, font=self.arrFont[0])
 		ilbW = objLabel.winfo_reqwidth()
 
 		ilbTimeX = int(((ibtnWH + ilbW) / 2) - (ilbW / 2))
@@ -149,7 +148,7 @@ class clTimePicker:
 				iNumPadX += ibtnWH
 			# End of if
 
-			objButton = objLibTK.Button(objfrBorder, text=iValue, font=self.strFont, padx=iPad, pady=iPad,
+			objButton = objLibTK.Button(objfrBorder, text=iValue, font=self.arrFont[0], padx=iPad, pady=iPad,
 										command=lambda iValue=iValue: self._UpdateTime(iValue))
 
 			if iCount == 0:
@@ -183,8 +182,7 @@ class clTimePicker:
 		for iIndex in range(len(dictInfo["Names"])):
 			strName = dictInfo["Names"][iIndex]
 
-			objButton = objLibTK.Button(objfrBorder, text=strName, font=self.strFont,
-										command=dictInfo["Functions"][iIndex])
+			objButton = objLibTK.Button(objfrBorder, text=strName, font=self.arrFont[0], command=dictInfo["Functions"][iIndex])
 			objButton.place(x=ibtnX, y=ibtnY, width=ibtnW)
 			self.dictWidgets["Buttons"].append(objButton)
 			ibtnH = objButton.winfo_reqheight()
