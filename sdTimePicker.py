@@ -2,20 +2,22 @@
 # Started	: 23-July-2024
 # Completed	: 24-July-2024
 #
-# Enhancement : 13-Aug-2024 : Moved colours to dictionary
+# Enhancement : 13-Aug-2024 : 1. Moved colours to dictionary
+#							  2. Added "objCommon" parameter
+#
 
 from datetime import datetime as objLibDateTime
-import sdTooltip as objLibTooltip
 import time as objLibTime
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
 from tkinter import messagebox
 
 class clTimePicker:
-	def __init__(self, arrFont, dictColours, objCallback):
+	def __init__(self, arrFont, dictColours, objCallback, objCommon):
 		self.arrFont = arrFont
 		self.dictColours = dictColours
 		self.objCallback = objCallback
+		self.objCommon = objCommon
 
 		self.strCurTimePeriod = "AM"
 		self.strCurTimeFocus = "Hour"
@@ -190,7 +192,8 @@ class clTimePicker:
 			ibtnX += ibtnW + iPad
 		# End of for loop
 
-		self.ButtonDoneTT = objLibTooltip.clTooltip(self.dictWidgets["Buttons"][0], strPosition="bottom-left")
+		dictParams = { "objWidget": self.dictWidgets["Buttons"][0], "strPosition": "bottom-left" }
+		self.objTooltip = self.objCommon.GetLibrary("sdTooltip", **dictParams)
 
 		# ------------------------- Window -------------------------
 		iWinW = ibtnX + (iPad * 2)
