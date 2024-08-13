@@ -11,31 +11,33 @@
 #							  2. Redid logic of CreateWindow()
 #							  3. Added function StandAlone()
 # Fix		  : 07-Aug-2024 : Corrected Window width calculation in "CreateWindow()"
-# Enhancement : 11-Aug-2024 : 1. Added default button text in "Show*()" functions
+# Enhancement : 13-Aug-2024 : 1. Added default button text in "Show*()" functions
 #							  2. Added function "SetParentWindow()" and removed passing it as parameter in "Show*()" functions
 #							  3. Added code to customise colours during call to "__init__()"
+#							  4. Added objCommon parameter
 #
 
 import os as objLibOS
 from os.path import join as objLibOSPathJoin
-import sdCanvas as objLibCanvas
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
 
 class clMessageBox:
-	def __init__(self, strImgPath, dictFileNames, bDisableEsc, bDisableWinClose, strFont, dictColours):
+	def __init__(self, strImgPath, dictFileNames, bDisableEsc, bDisableWinClose, arrFont, dictColours, objCommon):
 		self.strImgPath = strImgPath
 		self.dictFileNames = dictFileNames
 		self.bDisableEsc = bDisableEsc
 		self.bDisableWinClose = bDisableWinClose
-		self.arrFont = strFont.split(" ")
+		self.arrFont = arrFont
 		self.dictColours = dictColours
+		self.objCommon = objCommon
 
 		self.objParentWindow = None
 		self.dictImages = {"Error": None, "Information": None, "Question": None, "Warning": None}
 		self.strBtnOption = ""
 		self.bFontInitialised = False
-		self.objCanvas = objLibCanvas.clCanvas()
+		dictParams = { "objCommon":self.objCommon}
+		self.objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
 	# End of __init__()
 
 	def _CreateWindow(self, strMBType, strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg):
@@ -47,7 +49,7 @@ class clMessageBox:
 
 		# Initialise
 		if not self.bFontInitialised:
-			objFont = objLibTkFont.Font(family=self.arrFont[0], size=self.arrFont[1], weight=self.arrFont[2])
+			objFont = objLibTkFont.Font(family=self.arrFont[1][0], size=self.arrFont[1][1], weight=self.arrFont[1][2])
 			self.itxtH = objFont.metrics("linespace")
 			self.itxtW = objFont.measure("W")
 			self.iImgWH = self.itxtH * 3
@@ -72,8 +74,8 @@ class clMessageBox:
 		objfrBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=colourBg)
 
 		# ------------------------- Heading -------------------------
-		strFont = " ".join([self.arrFont[0], str(int(self.arrFont[1])+2), "bold"])
-		objHdrLabel = objLibTK.Label(objWindow, text=strTitle, anchor="center", font=strFont, fg=colourFg, bg=colourBg)
+		tFont = (self.arrFont[1][0], self.arrFont[1][1], "bold")
+		objHdrLabel = objLibTK.Label(objWindow, text=strTitle, anchor="center", font=tFont, fg=colourFg, bg=colourBg)
 		iHdrlbW = objHdrLabel.winfo_reqwidth()
 		iHdrlbH = objHdrLabel.winfo_reqheight()
 
@@ -81,8 +83,7 @@ class clMessageBox:
 		iMsglbY = iHdrlbH + 10
 		iMsglbW = self.itxtW * 30
 
-		strFont = " ".join([self.arrFont[0], str(self.arrFont[1]), "normal"])
-		objMsgLabel = objLibTK.Label(objWindow, font=strFont, text=strMsg, justify="left", fg=colourFg,  bg=colourBg, wraplength=iMsglbW)
+		objMsgLabel = objLibTK.Label(objWindow, font=(self.arrFont[0]), text=strMsg, justify="left", fg=colourFg,  bg=colourBg, wraplength=iMsglbW)
 		iMsglbW = objMsgLabel.winfo_reqwidth()
 		iMsglbH = objMsgLabel.winfo_reqheight()
 		if iMsglbH < self.iImgWH:
