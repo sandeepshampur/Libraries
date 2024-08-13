@@ -9,6 +9,7 @@
 # Fix 		  :	16-Oct-2023 : Changed deprecated function "ANTIALIAS" with "LANCZOS"
 # Fix		  : 21-Jul-2024 : 1. Fixed code in CreateImage() where size was calculated wrongly when both width and height were -1
 #							  2. Added function ResizeImage()
+# Enhancement : 13-Aug-2024 : Added "objCommon" as parameter
 
 #********************************************************************************************
 # Imports
@@ -16,13 +17,14 @@
 from PIL import Image as objLibImage
 from PIL import ImageTk as objLibImageTk
 from re import sub as objLibRESub
-import sdTooltip as objLibTooltip
 import threading as objLibThreading
 import tkinter as objLibTK
 
 class clCanvas:
-	def __init__(self, objLoggerLog=None):
+	def __init__(self, objCommon, objLoggerLog):
+		self.objCommon = objCommon
 		self.objLoggerLog = objLoggerLog
+
 		self.objCanvas = None
 		self.objTooltip = None
 		self.objImg = None
@@ -138,7 +140,8 @@ class clCanvas:
 				self.strTooltip = ""
 			# End of if
 
-			self.objTooltip = objLibTooltip.clTooltip(self.objCanvas, strPosition=strTooltipPos, strMessage=self.strTooltip)
+			dictParams = { "objWidget": self.objCanvas, "strMessage": self.strTooltip, "strPosition": strTooltipPos }
+			self.objTooltip = self.objCommon.GetLibrary("sdTooltip", **dictParams)
 		# End of if
 	# End of CreateCanvas()
 
