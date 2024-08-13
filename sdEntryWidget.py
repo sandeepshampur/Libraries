@@ -11,7 +11,7 @@
 #							  2. Added function to get size of widget "GetSize()"
 #							  3. Added functions "SetMaxChars()", "GetBg()", "GetPlaceInfo()", "Forget()", "Place()", "GetName()", "SetName()", "Bind()"
 #
-# Fix /		  : 12-Aug-2024 : 1. Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
+# Fix /		  : 13-Aug-2024 : 1. Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
 # Enhancement				  2. Added function "SetValueDisabled()", "SetOption()", "SetBackground()"
 #							  3. Changed functions "GetBg()" and "SetBg()" to "GetOption()"
 #							  4. Modified "SetStatus()" to take status value and set background colour
@@ -24,15 +24,14 @@ import tkinter as objLibTk
 from tkinter import StringVar as objLibStringVar
 from tkinter import Entry as objLibEntry
 from re import compile as objRECompile
-import sdTooltip as objLibTooltip
-import inspect
 
 class clEntryWidget:
-	def __init__(self, strValue, strState, strFont, maxChars, charsAllowed, emptyAllowed, tooltip, callback, callbackargs, iMin, iMax, bTriggerCallback, dictColours):
+	def __init__(self, strValue, strState, arrFont, maxChars, charsAllowed, emptyAllowed, tooltip, callback, callbackargs, iMin, iMax,
+				 bTriggerCallback, dictColours, objCommon):
 		# Save parameters
 		self.strValue = strValue
 		self.strState = strState
-		self.strFont= strFont
+		self.strFont = arrFont[0]
 		self.iMaxChars = maxChars
 		strAllowed = "".join(["^", charsAllowed, "$"])
 		self.charsAllowed = objRECompile(strAllowed)
@@ -44,6 +43,7 @@ class clEntryWidget:
 		self.iMax = iMax
 		self.bTriggerCallback = bTriggerCallback
 		self.dictColours = dictColours
+		self.objCommon = objCommon
 
 		self.arrStatus = ["", "", 0] # Field [2] : It will be ("1") if user has set the error. Else it will be ("0")
 		self.strName = ""
@@ -65,7 +65,9 @@ class clEntryWidget:
 		elif iH == -1:
 			self.Widget.place(x=iX, y=iY, width=iW)
 		# End of if
-		self.WidgetTT = objLibTooltip.clTooltip(self.Widget, strMessage=self.tooltip)
+
+		dictParams = { "objWidget": self.Widget }
+		self.WidgetTT = self.objCommon.GetLibrary("sdTooltip", **dictParams)
 
 		# Configure
 		self.Widget.insert(0, self.strValue)
