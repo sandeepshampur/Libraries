@@ -78,10 +78,6 @@ class clNumberRange:
 		self.cbComboBox.current(dictValues["ComboboxSelection"])
 		self.cbComboBox.bind("<<ComboboxSelected>>", self.HandlerCombobox)
 
-		# Change font of dropdown. Note: This will affect font of listbox. Refer to link for better solution
-		# https://stackoverflow.com/questions/43086378/how-to-modify-ttk-combobox-fonts
-		objWindow.option_add('*TCombobox*Listbox.font', self.strFont)
-
 		# Left Entry Widget --------------------------------------------------------------------------------------------------------------
 		iEntryX = self.iComboW + (self.iPad * 2)
 		strChars = "".join("8" * (self.dictDefault["LeftEditBox"]["maxChars"]+1))
