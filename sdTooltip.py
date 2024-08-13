@@ -3,21 +3,23 @@
 #
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
-# Fix 		  : 19-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
-# Enhancement : 12-Jul-2024 : 1. Added function "ReplaceMessage()"
+# Fix 		  : 13-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
+# Enhancement : 13-Aug-2024 : 1. Added function "ReplaceMessage()"
 #							  2. Moved colours to dictionary
+#							  3. Added font
 #
 
 from re import sub as objRESub
 import tkinter as objLibTK
 
 class clTooltip:
-	def __init__(self, objWidget, strMessage, strPosition, iTimeout, dictColours):
+	def __init__(self, objWidget, strMessage, strPosition, iTimeout, arrFont, dictColours):
 		# Initialise class variables
 		self.objWidget = objWidget
 		self.strMessage = strMessage
 		self.strTTPosition = strPosition
 		self.iTimeout = abs(int(iTimeout) * 1000)
+		self.arrFont = arrFont
 		self.dictColours = dictColours
 
 		self.objToolTipWin = None
@@ -31,7 +33,7 @@ class clTooltip:
 		self.objToolTipWin.attributes("-topmost", True)
 		objFrame = objLibTK.Frame(self.objToolTipWin, borderwidth=0, background=self.dictColours["colourBg"])
 		self.lbMessage = objLibTK.Label(objFrame, text=strMessage, justify=objLibTK.LEFT, background=self.dictColours["colourBg"],
-										foreground=self.dictColours["colourFg"], relief=objLibTK.SOLID, borderwidth=0, wraplength=250)
+										foreground=self.dictColours["colourFg"], relief=objLibTK.SOLID, borderwidth=0, wraplength=250, font=(self.arrFont[0]))
 		self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
 		objFrame.grid()
 		self.lbMessage.update()
