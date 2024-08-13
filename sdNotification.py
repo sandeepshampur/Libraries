@@ -2,22 +2,21 @@
 # Completed: 15-January-2022
 #
 # Enhancement : 13-Feb-2022 : Moved Window parameter from __init__() to Show() function
-# Enhancement : 13-Aug-2024 : 1. Added font and colours as parameters
+# Enhancement : 13-Aug-2024 : 1. Added font, colours, and objCommon as parameters
 #							  2. Add functions "SetColours()" and "SetWrapLength()"
 #
 
 import os as objLibOS
-import sdCanvas as objLibCanvas
 import tkinter as objLibTK
-from tkinter import ttk as objLibTTK
 import vlc as objLibVLC
 
 class clNotification:
-	def __init__(self, iTimeOut, iWrapLength, arrFont, dictColours):
+	def __init__(self, iTimeOut, iWrapLength, arrFont, dictColours, objCommon):
 		self.iTimeOut = iTimeOut * 1000
 		self.iWrapLength = iWrapLength
 		self.arrFont = arrFont
 		self.dictColours = dictColours
+		self.objCommon = objCommon
 	# End of __init__()
 
 	def _GetWndXY(self, objWindow, iX, iY, iWndW, iWndH, justify):
@@ -135,9 +134,6 @@ class clNotification:
 		objWindow.attributes("-topmost", True)
 		objWindow.configure(background=self.dictColours["colourBg"])
 
-		objStyle = objLibTTK.Style()
-		objStyle.theme_use("clam")
-
 		# Title ---------------------------------------------------------------------
 		strFont = "".join([self.arrFont[1][0], self.arrFont[1][1], "bold"])
 		lbTitle = objLibTK.Label(objWindow, text=strTitle, justify="center", background=self.dictColours["colourBg"], font=strFont,
@@ -155,7 +151,8 @@ class clNotification:
 		iPad = 0
 		iImgH = 0
 		if iImgW != 0:
-			self.objCanvas = objLibCanvas.clCanvas()
+			dictParams = { "objCommon": self.objCommon }
+			self.objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
 			self.objCanvas.CreateImage(strImage, iImgW, -1)
 			dictDim = self.objCanvas.GetDimensions()
 			iImgH = dictDim["Height"]
@@ -198,7 +195,7 @@ class clNotification:
 		objWindow.deiconify()
 
 		# Sound ---------------------------------------------------------------------
-		if len(strSound) != 0:
+		if len(strSound) > 0:
 			objSound = objLibVLC.MediaPlayer(strSound)
 			objSound.play()
 		# End of if
