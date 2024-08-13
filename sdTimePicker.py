@@ -68,8 +68,8 @@ class clTimePicker:
 
 		# Hour
 		iFontSize = int(self.arrFont[1][1]) * 2
-		strFont = " ".join([self.arrFont[1][0], str(iFontSize), "bold"])
-		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
+		tFont = (self.arrFont[1][0], iFontSize, "bold")
+		objButton = objLibTK.Button(objfrBorder, text="00", font=tFont, padx=2, pady=2)
 		objButton.config(relief="sunken")
 		objButton.place(x=ibtnX, y=ibtnY)
 		objButton.bind("<Button-1>", lambda _: self._HandlerbtnTime("Hour"))
@@ -78,13 +78,13 @@ class clTimePicker:
 
 		# Time separator
 		ibtnX += ibtnWH + 1
-		objLabel = objLibTK.Label(master=objfrBorder, text=":", font=strFont)
+		objLabel = objLibTK.Label(master=objfrBorder, text=":", font=tFont)
 		objLabel.place(x=ibtnX, y=ibtnY)
 		ilbW = objLabel.winfo_reqwidth()
 
 		# Minute
 		ibtnX += ilbW + 1
-		objButton = objLibTK.Button(objfrBorder, text="00", font=strFont, padx=2, pady=2)
+		objButton = objLibTK.Button(objfrBorder, text="00", font=tFont, padx=2, pady=2)
 		objButton.config(relief="sunken")
 		objButton.place(x=ibtnX, y=ibtnY)
 		objButton.bind("<Button-1>", lambda _: self._HandlerbtnTime("Minute"))
@@ -96,11 +96,12 @@ class clTimePicker:
 		ibtnX += ibtnWH + iPad
 		ibtnH = int(ibtnWH / 2)
 		iFontSize = int(int(self.arrFont[1][1]) * 0.75)
+		tFont = (self.arrFont[1][0], iFontSize, self.arrFont[1][2])
 		self.dictWidgets["AMPM"] = []
 
 		arrInfo = ["AM", "PM"]
 		for strPeriod in arrInfo:
-			objButton = objLibTK.Button(objfrBorder, text=strPeriod, font=strFont, padx=2, pady=2,
+			objButton = objLibTK.Button(objfrBorder, text=strPeriod, font=tFont, padx=2, pady=2,
 										command=lambda strPeriod=strPeriod:self._ToggleAMPM(strPeriod))
 			objButton.place(x=ibtnX, y=ibtnY, height=ibtnH)
 			ibtnH = objButton.winfo_reqheight()
@@ -193,7 +194,7 @@ class clTimePicker:
 		# End of for loop
 
 		dictParams = { "objWidget": self.dictWidgets["Buttons"][0], "strPosition": "bottom-left" }
-		self.objTooltip = self.objCommon.GetLibrary("sdTooltip", **dictParams)
+		self.ButtonDoneTT = self.objCommon.GetLibrary("sdTooltip", **dictParams)
 
 		# ------------------------- Window -------------------------
 		iWinW = ibtnX + (iPad * 2)
