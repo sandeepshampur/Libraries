@@ -2,6 +2,8 @@
 # Completed: 15-January-2022
 #
 # Enhancement : 13-Feb-2022 : Moved Window parameter from __init__() to Show() function
+# Enhancement : 13-Aug-2024 : 1. Added font and colours as parameters
+#							  2. Add functions "SetColours()" and "SetWrapLength()"
 #
 
 import os as objLibOS
@@ -11,11 +13,14 @@ from tkinter import ttk as objLibTTK
 import vlc as objLibVLC
 
 class clNotification:
-	def __init__(self):
-		pass
+	def __init__(self, iTimeOut, iWrapLength, arrFont, dictColours):
+		self.iTimeOut = iTimeOut * 1000
+		self.iWrapLength = iWrapLength
+		self.arrFont = arrFont
+		self.dictColours = dictColours
 	# End of __init__()
 
-	def GetWndXY(self, objWindow, iX, iY, iWndW, iWndH, justify):
+	def _GetWndXY(self, objWindow, iX, iY, iWndW, iWndH, justify):
 		# Get screen dimensions
 		iScrW = objWindow.winfo_screenwidth()
 		iScrH = objWindow.winfo_screenheight()
@@ -85,9 +90,29 @@ class clNotification:
 		# End of if
 
 		return [iNewX, iNewY]
-	# End of GetWndXY()
+	# End of _GetWndXY()
 
-	def Show(self, objParentWindow, strTitle="Title", strMsg="Message", strSound="", strImage="", iX=-1, iY=-1, iImgW=0, justify="center", iTimeout=5, colourFg="black", colourBg="#FFFA8A", wraplength=100):
+	def SetColours(self, dictColours):
+		'''
+		Structure of dictColours
+		dictColours = {
+			"colourFg": <colour>,
+			"colourBg": <colour>
+		}
+		'''
+		self.dictColours = dictColours
+	# End of SetColours()
+
+	def SetTimeout(self, iTimeOut):
+		# iTimeOut in seconds
+		self.iTimeOut = iTimeOut * 1000
+	# End of SetTimeout()
+
+	def SetWrapLength(self, iWarpLength):
+		self.iWrapLength = iWarpLength
+	# End of SetWrapLength
+
+	def Show(self, objParentWindow, strTitle="Title", strMsg="Message", strSound="", strImage="", iX=-1, iY=-1, iImgW=0, justify="center"):
 		# Check if sound file exists
 		if len(strSound) != 0:
 			if not objLibOS.path.isfile(strSound):
@@ -108,18 +133,21 @@ class clNotification:
 		objWindow.withdraw()
 		objWindow.wm_overrideredirect(True)
 		objWindow.attributes("-topmost", True)
-		objWindow.configure(background=colourBg)
+		objWindow.configure(background=self.dictColours["colourBg"])
 
 		objStyle = objLibTTK.Style()
 		objStyle.theme_use("clam")
 
 		# Title ---------------------------------------------------------------------
-		lbTitle = objLibTK.Label(objWindow, text=strTitle, justify="center", background=colourBg, font="bold", foreground=colourFg)
+		strFont = "".join([self.arrFont[1][0], self.arrFont[1][1], "bold"])
+		lbTitle = objLibTK.Label(objWindow, text=strTitle, justify="center", background=self.dictColours["colourBg"], font=strFont,
+								 foreground=self.dictColours["colourFg"])
 		ilbTitleW = lbTitle.winfo_reqwidth()
 		ilbTitleH = lbTitle.winfo_reqheight()
 
 		# Message ---------------------------------------------------------------------
-		lbMessage = objLibTK.Label(objWindow, text=strMsg, justify="left", anchor="w", background=colourBg, foreground=colourFg, wraplength=wraplength)
+		lbMessage = objLibTK.Label(objWindow, text=strMsg, justify="left", anchor="w", background=self.dictColours["colourBg"],
+								   foreground=self.dictColours["colourFg"], wraplength=self.iWrapLength, font=self.arrFont[0])
 		ilbMsgW = lbMessage.winfo_reqwidth()
 		ilbMsgH = lbMessage.winfo_reqheight()
 
@@ -153,13 +181,13 @@ class clNotification:
 		lbTitle.place(x=0, y=0, width=ilbTitleW, height=ilbTitleH)
 		lbMessage.place(x=ilbMsgX, y=iImgY, width=ilbMsgW, height=ilbMsgH)
 		if len(strImage) != 0:
-			self.objCanvas.CreateCanvas(objWindow, iPad, iImgY, colourBg)
+			self.objCanvas.CreateCanvas(objWindow, iPad, iImgY, self.dictColours["colourBg"])
 		# End of if
 
 		# Calculate window coordinates ------------------------------------------------
 		iWndW = ilbTitleW + 20
 		iWndH = ilbTitleH + ilbMsgH + 20
-		arrWndCoord = self.GetWndXY(objWindow, iX, iY, iWndW, iWndH, justify)
+		arrWndCoord = self._GetWndXY(objWindow, iX, iY, iWndW, iWndH, justify)
 
 		strWinDim = "".join([str(iWndW), "x", str(iWndH), "+", str(arrWndCoord[0]), "+", str(arrWndCoord[1])])
 		objWindow.geometry(strWinDim)
@@ -176,7 +204,6 @@ class clNotification:
 		# End of if
 
 		# Timer ---------------------------------------------------------------------
-		iTimeout *= 1000
-		objWindow.after(iTimeout, objWindow.destroy)
+		objWindow.after(self.iTimeout, objWindow.destroy)
 	# End of Display()
 # End of class clNotification
