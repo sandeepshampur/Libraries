@@ -24,15 +24,14 @@ import tkinter as objTK
 from tkinter import ttk as objTTK
 
 class clListBoxMultiColumn:
-	def __init__(self, dictTvHdrAttrib, arrDefaultRecords, iSortByColumn, strFont, dictColours, objLoggerLog):
+	def __init__(self, dictTvHdrAttrib, arrDefaultRecords, iSortByColumn, arrFont, dictColours, objLoggerLog):
 		self.dictTvHdrAttrib = dictTvHdrAttrib
 		self.arrDefaultRecords = arrDefaultRecords
 		self.iColumnToSort = iSortByColumn
-		self.strFont = strFont
+		self.arrFont = arrFont
 		self.dictColours = dictColours
 		self.objLoggerLog = objLoggerLog
 
-		self.arrFont = self.strFont.split(" ")
 		# Identify columns with date for formatting later
 		self.arrDtCol = []
 		iIndex = 0
@@ -52,14 +51,14 @@ class clListBoxMultiColumn:
 	# End of __init__()
 	
 	def Display(self, objWindow, strSelectMode, ifrX, ifrY, ifrW, ifrH, arrRecords, bSortDescending=False, strHeader=""):
-		objFrame = objTK.LabelFrame(objWindow, text=strHeader, foreground=self.dictColours["colourFg"], background=self.dictColours["colourBg"], font=self.strFont)
+		objFrame = objTK.LabelFrame(objWindow, text=strHeader, foreground=self.dictColours["colourFg"], background=self.dictColours["colourBg"], font=self.arrFont[0])
 		self.bSortDescending = bSortDescending
 
 		# Set header background colour
 		objStyle = objTTK.Style()
-		objStyle.configure("tvResult.Treeview", background="black", fieldbackground=self.tagBgEven, font=(self.strFont))
+		objStyle.configure("tvResult.Treeview", background="black", fieldbackground=self.dictColours["tagBgEven"], font=(self.arrFont[0]))
 		objStyle.configure("tvResult.Treeview.Heading", foreground=self.dictColours["colourFgHdr"], background=self.dictColours["colourBgHdr"],
-						   font=(self.arrFont[0], self.arrFont[1], "bold"))
+						   font=(self.arrFont[1][0], self.arrFont[1][1], "bold"))
 
 		self.tvRecords = clListBoxMultiColumnSort(master=objFrame, columns=self.dictTvHdrAttrib["header"], show="headings", selectmode=strSelectMode,
 												  style="tvResult.Treeview", tagBgEven=self.dictColours["tagBgEven"], tagBgOdd=self.dictColours["tagBgOdd"],
