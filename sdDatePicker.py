@@ -179,10 +179,6 @@ class clDatePicker:
 			iY = iScrH - iWinH
 		# End of if
 
-		# todo
-		iX += 200
-		iY += 200
-
 		strWinDim = "".join([str(iWinW), "x", str(iWinH), "+", str(iX), "+", str(iY)])
 		objWindow.geometry(strWinDim)
 
