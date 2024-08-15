@@ -7,6 +7,11 @@
 # Enhancement : 15-Aug-2024 : Revamped logic
 #
 
+import datetime as objLibDateTime
+from dateutil.relativedelta import relativedelta as objLibRelativeDelta
+from os.path import join as objLibOSPathJoin
+import tkinter as objLibTK
+
 class clDatePicker:
 	def __init__(self, arrDateDefault, dictImage, arrFont, dictColours, objCommon):
 		# arrDateDefault = [day, month, year]
@@ -76,8 +81,6 @@ class clDatePicker:
 		objBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=self.dictColours["colourBg"])
 
 		# ------------------------- Heading -------------------------
-
-		print(self.arrFont)
 		tFont = (self.arrFont[0], self.arrFont[1], "bold")
 		objHdrLabel = objLibTK.Label(objBorder, text="Select Date", anchor="center", foreground=self.dictColours["colourFg"],
 										  background=self.dictColours["colourBg"], font=tFont)
