@@ -13,29 +13,26 @@ from os.path import join as objLibOSPathJoin
 import tkinter as objLibTK
 
 class clDatePicker:
-	def __init__(self, arrDateDefault, dictImage, arrFont, dictColours, objCommon):
-		# arrDateDefault = [day, month, year]
+	def __init__(self, dictImage, arrFont, dictColours, objCommon):
 		# month = 1 for Jan
-		self.arrDateDefault = arrDateDefault
 		self.dictImage = dictImage
 		self.arrFont = arrFont
 		self.dictColours = dictColours
 		self.objCommon = objCommon
 
-		self.objWindow = None
-		self.strDate = ""
 		self.iPad = 10
 		self.iHalfPad = int(self.iPad / 2)
 
+		self.arrGrids = ["DateGrid", "MonthGrid", "YearGrid"]
+		self.arrMonthArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 		self.dictInfo = {
 			"CurrentDate": {
 				"MonthDirty": False,
 				"YearDirty": False
 			},
 			"CurrentGrid": "DateGrid",
-			"Grids": ["DateGrid", "MonthGrid", "YearGrid"],
-			"MonthArray": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-			"YearArray": []
+			"Grids": self.arrGrids,
+			"MonthArray": self.arrMonthArray
 		}
 		'''
 		Structure of self.dictInfo
@@ -52,7 +49,7 @@ class clDatePicker:
 		}
 		'''
 
-		self.dictWidgets = { "Images": [] }
+		self.dictWidgets = {}
 		'''
 		Structure of self.dictWidgets
 		self.dictWidgets = {
@@ -61,15 +58,19 @@ class clDatePicker:
 				"Frame": [<objWidget>, <frame info>]
 				"Buttons": []
 			}
-			"Images": []
+			"Image": <objImage>
 		}
 		'''
-		self.SetDate(arrDateDefault, False)
 	# End of __init__()
 
-	def Display(self, objParentWindow):
+	def Display(self, objParentWindow, arrDate):
+		# arrDate = [day, month, year]
+		# month = 1 for Jan
+
 		# Initialise
 		self.objParentWindow = objParentWindow
+		self.arrDate = arrDate
+		self.SetDate(arrDate, False)
 
 		objWindow = objLibTK.Toplevel(self.objParentWindow)
 		objWindow.withdraw()
@@ -195,22 +196,31 @@ class clDatePicker:
 		objWindow.grab_release()
 		self.objParentWindow.focus_force()
 
-		strDate = self.strDate
-		self.strDate = ""
+		strDate = self.dictInfo["CurrentDate"]["Text"]
+		self._Cleanup()
 		return strDate
 	# End of Display()
 
 	def GetImage(self, iImgW, iImgH):
-		dictParams = { "objCommon": self.objCommon }
-		objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
+		for x in range(1):
+			if "Image" in self.dictWidgets:
+				objImage = self.dictWidgets["Image"]
+				break
+			# End of if
 
-		strImgPath = objLibOSPathJoin(self.dictImage["Path"], self.dictImage["File"])
-		objCanvas.CreateImage(strImgPath, iImgW, iImgH)
-		dictDim = objCanvas.GetDimensions()
+			# Create image
+			dictParams = { "objCommon": self.objCommon }
+			objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
 
-		self.dictWidgets["Images"].append(dictDim["Image"])
+			strImgPath = objLibOSPathJoin(self.dictImage["Path"], self.dictImage["File"])
+			objCanvas.CreateImage(strImgPath, iImgW, iImgH)
+			dictDim = objCanvas.GetDimensions()
 
-		return dictDim["Image"]
+			self.dictWidgets["Image"] = dictDim["Image"]
+			objImage = dictDim["Image"]
+		# End of for loop
+
+		return objImage
 	# End of GetImage()
 
 	def SetDate(self, arrDate, bUpdateGUI=True):
@@ -240,6 +250,30 @@ class clDatePicker:
 			self._UpdateGUI()
 		# End of if
 	# End of SetDate()
+
+	def _Cleanup(self):
+		# Save image if present
+		if "Image" in self.dictWidgets:
+			objImage = self.dictWidgets["Image"]
+		else:
+			objImage = None
+		# End of if
+		self.dictWidgets.clear()
+		if objImage is not None:
+			self.dictWidgets["Image"] = objImage
+		# End of if
+
+		self.dictInfo.clear()
+		self.dictInfo = {
+			"CurrentDate": {
+				"MonthDirty": False,
+				"YearDirty": False
+			},
+			"CurrentGrid": "DateGrid",
+			"Grids": self.arrGrids,
+			"MonthArray": self.arrMonthArray
+		}
+	# End of _Cleanup()
 
 	def _CreateDateGrid(self, objFrame, iGridX, iGridY):
 		ibtnX = 0
@@ -332,13 +366,12 @@ class clDatePicker:
 	# End of _CreateMonthYearGrid()
 
 	def _HandlerbtnCancel(self):
+		self.dictInfo["CurrentDate"]["Text"] = ""
 		self.objWindow.destroy()
-		self.objWindow = None
 	# End of _HandlerbtnCancel()
 
 	def _HandlerbtnDone(self):
-		self.strDate = "-".join([str(self.dictGrid["Date"][2]), str(self.dictGrid["Date"][1]), str(self.dictGrid["Date"][0])])
-		self._HandlerbtnCancel()
+		self.objWindow.destroy()
 	# End of _HandlerbtnDone()
 
 	def _HandlerbtnLeftRight(self, strType):
@@ -395,7 +428,7 @@ class clDatePicker:
 	def _HandlerbtnReset(self):
 		self.dictInfo["CurrentDate"]["MonthDirty"] = True
 		self.dictInfo["CurrentDate"]["YearDirty"] = True
-		self.SetDate(self.arrDateDefault)
+		self.SetDate(self.arrDate)
 		self._ToggleGrid("DateGrid")
 	# End of _HandlerbtnReset()
 
