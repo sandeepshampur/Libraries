@@ -1,5 +1,5 @@
 #
-# Completed: 13-August-2024
+# Completed: 16-August-2024
 #
 
 
@@ -8,28 +8,70 @@
 # E.g. sdCanvas as objLibSDCanvas ie, add "objLib" to the beginning and capitalise "sd" to "SD"
 #
 
+import sys as objLibSys
+objLibSys.dont_write_bytecode = True
+objLibSys.path.insert(1, "Data")
+
+import sdImportDecider as objLibImportDecider
+import sdIniParser as objLibSDIniParser
+
+if objLibImportDecider.sdCanvas:
+	import sdCanvas as objLibSDCanvas
+
+if objLibImportDecider.sdCharts:
+	import sdCharts as objLibSDCharts
+
+if objLibImportDecider.sdCheckbutton:
+	import sdCheckbutton as objLibSDCheckbutton
+
+if objLibImportDecider.sdChecksum:
+	import sdChecksum as objLibSDChecksum
+
+if objLibImportDecider.sdDatabase:
+	import sdDatabase as objLibSDDatabase
+
+if objLibImportDecider.sdDatePicker:
+	import sdDatePicker as objLibSDDatePicker
+
+if objLibImportDecider.sdEntryWidget:
+	import sdEntryWidget as objLibSDEntryWidget
+
+if objLibImportDecider.sdInput:
+	import sdInput as objLibSDInput
+
+if objLibImportDecider.sdListBoxMultiColumn:
+	import sdListBoxMultiColumn as objLibSDListBoxMultiColumn
+
+if objLibImportDecider.sdLogger:
+	import sdLogger as objLibSDLogger
+
+if objLibImportDecider.sdMessageBox:
+	import sdMessageBox as objLibSDMessageBox
+
+if objLibImportDecider.sdNamedPipe:
+	import sdNamedPipe as objLibSDNamedPipe
+
+if objLibImportDecider.sdNotification:
+	import sdNotification as objLibSDNotification
+
+if objLibImportDecider.sdNumberRange:
+	import sdNumberRange as objLibSDNumberRange
+
+if objLibImportDecider.sdProgressBar:
+	import sdProgressBar as objLibSDProgressBar
+
+if objLibImportDecider.sdTimePicker:
+	import sdTimePicker as objLibSDTimePicker
+
+if objLibImportDecider.sdTimer:
+	import sdTimer as objLibSDTimer
+
+if objLibImportDecider.sdTooltip:
+	import sdTooltip as objLibSDTooltip
+
 import ast as objLibAST
 import os as objLibOS
 from os.path import join as objLibOSPathJoin
-import sdCanvas as objLibSDCanvas
-import sdCharts as objLibSDCharts
-import sdCheckbutton as objLibSDCheckbutton
-import sdChecksum as objLibSDChecksum
-import sdDatabase as objLibSDDatabase
-import sdDatePicker as objLibSDDatePicker
-import sdEntryWidget as objLibSDEntryWidget
-import sdIniParser as objLibSDIniParser
-import sdInput as objLibSDInput
-import sdListBoxMultiColumn as objLibSDListBoxMultiColumn
-import sdLogger as objLibSDLogger
-import sdMessageBox as objLibSDMessageBox
-import sdNamedPipe as objLibSDNamedPipe
-import sdNotification as objLibSDNotification
-import sdNumberRange as objLibSDNumberRange
-import sdProgressBar as objLibSDProgressBar
-import sdTimePicker as objLibSDTimePicker
-import sdTimer as objLibSDTimer
-import sdTooltip as objLibSDTooltip
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
 from tkinter import messagebox as objLibTKMessageBox
@@ -86,6 +128,7 @@ class clCommon:
 			self.iFontSize = int(self.objIniParser.GetItem("Font", "Size"))
 			self.strFontWeight = self.objIniParser.GetItem("Font", "Weight")
 			self.strFontString = self.objIniParser.GetItem("Font", "strFont")
+			self.strFontString = objLibAST.literal_eval(self.strFontString)
 
 			# Check environment
 			self._CheckEnvironment()
@@ -197,7 +240,6 @@ class clCommon:
 					continue
 				# End of if
 
-				# Type cast paramter. Avoid "eval" as it is a security risk.
 				dictParameters[strParameter] = objLibAST.literal_eval(arrParameterValue[1])
 			# End of for loop
 
