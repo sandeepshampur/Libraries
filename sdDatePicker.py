@@ -4,7 +4,7 @@
 # Created: 04-March-2022
 #
 # Fix 		  : 22-Jun-2024 : Moved objWindow.grab_set() to end of function and added Added objWindow.wait_visibility() in clDatePicker:Display()
-# Enhancement : 15-Aug-2024 : Revamped logic
+# Enhancement : 16-Aug-2024 : Revamped logic
 #
 
 import datetime as objLibDateTime
@@ -82,7 +82,7 @@ class clDatePicker:
 		objBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=self.dictColours["colourBg"])
 
 		# ------------------------- Heading -------------------------
-		tFont = (self.arrFont[0], self.arrFont[1], "bold")
+		tFont = (self.arrFont[1][0], self.arrFont[1][1], "bold")
 		objHdrLabel = objLibTK.Label(objBorder, text="Select Date", anchor="center", foreground=self.dictColours["colourFg"],
 										  background=self.dictColours["colourBg"], font=tFont)
 		ilbH = objHdrLabel.winfo_reqheight()
