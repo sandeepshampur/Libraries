@@ -1,14 +1,13 @@
 #
-# Created:	 08-August--2024
+# Completed : 19-August--2024
 #
 
-import sdEntryWidget as objLibEntry
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
 from tkinter import ttk as objLibTTK
 
 class clNumberRange:
-	def __init__(self, dictDefault, font="Arial 11 normal", dictColours={}):
+	def __init__(self, dictDefault, objCommon, arrFont, dictColours):
 		'''
 		Structure of dictDefault
 		dictDefault = {
@@ -28,33 +27,16 @@ class clNumberRange:
 		}
 		'''
 		self.dictDefault = dictDefault
-		self.strFont = font
+		self.objCommon = objCommon
+		self.arrFont = arrFont
 		self.dictColours = dictColours
 
-		self.arrFont = font.split(" ")
 		self.ComboOptions = ["=", "!=", ">", ">=", "<", "<=", "<>"]
 		self.iPad = 10
-
-		# Calculate size of widget
-		self.objFont = objLibTkFont.Font(family=self.arrFont[0], size=self.arrFont[1], weight=self.arrFont[2])
-		self.iComboW = self.objFont.measure("WWW")
-		self.iComboH = self.objFont.metrics("linespace") + 5
-
-		iChars = dictDefault["LeftEditBox"]["maxChars"]
-		if iChars < dictDefault["RightEditBox"]["maxChars"]:
-			iChars = dictDefault["RightEditBox"]["maxChars"]
-		# End of if
-		iChars += 1
-		strChars = "".join("8" * iChars)
-		self.iEntryW = self.objFont.measure(strChars)
-
-		iWidgetW = self.iComboW + (self.iEntryW * 2) + (self.iPad * 4)
-		iWidgetH = self.iComboH + (self.iPad * 4)
-
-		self.dictDim = [iWidgetW, iWidgetH]
+		self.iHalfPad = int(self.iPad / 2)
 	# End of __init__()
 
-	def Display(self, objWindow, strHeading, iX, iY, dictValues={}, iW=-1, iH=-1):
+	def Display(self, objWindow, strHeading, iX, iY, dictValues={}):
 		'''
 		Structure of dictValues
 		dictValues = {
@@ -63,46 +45,58 @@ class clNumberRange:
 			"RightEditBoxValue": 0
 		}
 		'''
+
+		# Initialise
 		if len(dictValues) == 0:
 			dictValues["ComboboxSelection"] = self.dictDefault["ComboboxSelection"]
 			dictValues["LeftEditBoxValue"] = self.dictDefault["LeftEditBox"]["Value"]
 			dictValues["RightEditBoxValue"] = self.dictDefault["RightEditBox"]["Value"]
 		# End of if
+		iComboW = self.objCommon.GetFontInfo("TextWidth", "WWW")
+		iComboH = self.objCommon.GetFontInfo("TextHeight") + self.iHalfPad
 
-		objFrame = objLibTK.LabelFrame(objWindow, text=strHeading, font=self.strFont)
+		# Frame
+		objFrame = objLibTK.LabelFrame(objWindow, text=strHeading)
 
 		# Combobox ----------------------------------------------------------------------------------------------------------------------
 
-		self.cbComboBox = objLibTTK.Combobox(master=objFrame, state="readonly", values=self.ComboOptions, font=self.strFont)
-		self.cbComboBox.place(x=self.iPad, y=self.iPad, width=self.iComboW, height=self.iComboH)
+		self.cbComboBox = objLibTTK.Combobox(master=objFrame, state="readonly", values=self.ComboOptions)
+		self.cbComboBox.place(x=self.iPad, y=self.iPad, width=iComboW, height=iComboH)
 		self.cbComboBox.current(dictValues["ComboboxSelection"])
 		self.cbComboBox.bind("<<ComboboxSelected>>", self.HandlerCombobox)
 
 		# Left Entry Widget --------------------------------------------------------------------------------------------------------------
-		iEntryX = self.iComboW + (self.iPad * 2)
-		strChars = "".join("8" * (self.dictDefault["LeftEditBox"]["maxChars"]+1))
-		self.objLeftEntry = objLibEntry.clEntryWidget(value=dictValues["LeftEditBoxValue"], state="normal", font=self.strFont,
-													  maxChars=self.dictDefault["LeftEditBox"]["maxChars"], charsAllowed="\d+", emptyAllowed="no",
-													  callback=self.HandlerEntryWidget, callbackargs=("Left",),
-													  iMin=self.dictDefault["LeftEditBox"]["iMin"], iMax=self.dictDefault["LeftEditBox"]["iMax"])
-		self.objLeftEntry.Display(objFrame, x=iEntryX, y=self.iPad, w=self.iEntryW, h=self.iComboH, justify="center")
+		iEntryX = iComboW + (self.iPad * 2)
+		iMaxChars = self.dictDefault["LeftEditBox"]["maxChars"]
+		if iMaxChars < self.dictDefault["RightEditBox"]["maxChars"]:
+			iMaxChars = self.dictDefault["RightEditBox"]["maxChars"]
+		# End of if
+		strChars = "".join("8" * (iMaxChars+1))
+		iEntryW = self.objCommon.GetFontInfo("TextWidth", strChars)
+
+		dictParams = { "strValue": dictValues["LeftEditBoxValue"], "maxChars": self.dictDefault["LeftEditBox"]["maxChars"], "charsAllowed": "\d+", "emptyAllowed": "no",
+					   "callback": self.HandlerEntryWidget, "callbackargs": ("Left", ), "iMin": self.dictDefault["LeftEditBox"]["iMin"],
+					   "iMax": self.dictDefault["LeftEditBox"]["iMax"], "objCommon": self.objCommon }
+		self.objLeftEntry = self.objCommon.GetLibrary("sdEntryWidget", **dictParams)
+		self.objLeftEntry.Display(objFrame, iX=iEntryX, iY=self.iPad, iW=iEntryW, iH=iComboH, justify="center")
 
 		# Right Entry Widget --------------------------------------------------------------------------------------------------------------
-		iEntryX += self.iEntryW + self.iPad
-		self.objRightEntry = objLibEntry.clEntryWidget(value=dictValues["RightEditBoxValue"], state="normal", font=self.strFont,
-													  maxChars=self.dictDefault["RightEditBox"]["maxChars"], charsAllowed="\d+", emptyAllowed="no",
-													   callback=self.HandlerEntryWidget, callbackargs=("Right",),
-													  iMin=self.dictDefault["RightEditBox"]["iMin"], iMax=self.dictDefault["RightEditBox"]["iMax"])
-		self.objRightEntry.Display(objFrame, x=iEntryX, y=self.iPad, w=self.iEntryW, h=self.iComboH, justify="center")
+		iEntryX += iEntryW + self.iPad
+
+
+		dictParams = { "strValue": dictValues["RightEditBoxValue"], "maxChars": self.dictDefault["RightEditBox"]["maxChars"], "charsAllowed": "\d+", "emptyAllowed": "no",
+					   "callback": self.HandlerEntryWidget, "callbackargs": ("Right", ), "iMin": self.dictDefault["RightEditBox"]["iMin"],
+					   "iMax": self.dictDefault["RightEditBox"]["iMax"], "objCommon": self.objCommon }
+		self.objRightEntry = self.objCommon.GetLibrary("sdEntryWidget", **dictParams)
+		self.objRightEntry.Display(objFrame, iX=iEntryX, iY=self.iPad, iW=iEntryW, iH=iComboH, justify="center")
 
 		# Set state for right entry widget
 		if dictValues["ComboboxSelection"] != 6:
-			self.objRightEntry.SetValue("")
-			self.objRightEntry.SetState("disabled")
+			self.objRightEntry.SetValueDisabled("")
 		# End of if
 
-		iWidth = self.dictDim[0] if self.dictDim[0] >= iW else iW
-		iHeight = self.dictDim[1] if self.dictDim[1] >= iH else iH
+		iWidth = iEntryX + iEntryW + self.iPad
+		iHeight = iComboH + (self.iPad * 4)
 		objFrame.place(x=iX, y=iY, width=iWidth, height=iHeight)
 
 		return [iWidth, iHeight]
@@ -138,7 +132,6 @@ class clNumberRange:
 			# Get values
 			iLeftValue = int(self.objLeftEntry.GetValue() or 0)
 			iRightValue = int(self.objRightEntry.GetValue() or 0)
-			print("User handler ->", iLeftValue, iRightValue)
 
 			match strWhich:
 				case "Left":
@@ -151,7 +144,6 @@ class clNumberRange:
 					# Flag error
 					self.objLeftEntry.SetStatus(-1, "Fatal", "Value should be less than right side value")
 					self.objRightEntry.SetStatus()
-					print("User handler -> Left error")
 				# End of case
 
 				case "Right":
@@ -164,15 +156,10 @@ class clNumberRange:
 					# Flag error
 					self.objLeftEntry.SetStatus()
 					self.objRightEntry.SetStatus(-1, "Fatal", "Value should be greater than left side value")
-					print("User handler -> Right error")
 				# End of case
 			# End of match
 		# End of for loop
 	# End of HandlerEntryWidget()
-
-	def GetSize(self):
-		return self.dictDim
-	# End of GetSize()
 
 	def Reset(self):
 		self.cbComboBox.current(self.dictDefault["ComboboxSelection"])
