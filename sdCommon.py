@@ -1,8 +1,6 @@
 #
-# Completed: 16-August-2024
+# Completed: 19-August-2024
 #
-
-
 #											IMPORTANT
 # Below naming convention has to be used to import "sd*" libraries to avoid failure of "GetLibrary()" function
 # E.g. sdCanvas as objLibSDCanvas ie, add "objLib" to the beginning and capitalise "sd" to "SD"
@@ -29,6 +27,9 @@ if objLibImportDecider.sdChecksum:
 
 if objLibImportDecider.sdDatabase:
 	import sdDatabase as objLibSDDatabase
+
+if objLibImportDecider.sdDate:
+	import sdDate as objLibSDDate
 
 if objLibImportDecider.sdDatePicker:
 	import sdDatePicker as objLibSDDatePicker
@@ -124,11 +125,8 @@ class clCommon:
 			self.objIniParser.SetItem("Paths", "WorkingDir", self.strWorkingDir)
 
 			# Initialise font information
-			self.strFontFamily = self.objIniParser.GetItem("Font", "Family")
-			self.iFontSize = int(self.objIniParser.GetItem("Font", "Size"))
-			self.strFontWeight = self.objIniParser.GetItem("Font", "Weight")
-			self.strFontString = self.objIniParser.GetItem("Font", "strFont")
-			self.strFontString = objLibAST.literal_eval(self.strFontString)
+			self.arrFont = self.objIniParser.GetItem("Font", "arrFont")
+			self.arrFont = objLibAST.literal_eval(self.arrFont)
 
 			# Check environment
 			self._CheckEnvironment()
@@ -162,31 +160,31 @@ class clCommon:
 
 		# Form font object
 		if len(strFamily) == 0:
-			strFamily = self.strFontFamily
+			strFamily = self.arrFont[0]
 		# End of if
 		if iSize == 0:
-			iSize = self.iFontSize
+			iSize = self.arrFont[1]
 		# End of if
 		if len(strWeight) == 0:
-			strWeight = self.strFontWeight
+			strWeight = self.arrFont[2]
 		# End of if
 		objFont = objLibTkFont.Font(family=strFamily, size=iSize, weight=strWeight)
 
 		match strKey:
 			case "FontFamily":
-				strValue = self.strFontFamily
+				strValue = self.arrFont[0]
 			# End of case
 
 			case "FontSize":
-				strValue = self.iFontSize
+				strValue = self.arrFont[1]
 			# End of case
 
 			case "FontString":
-				strValue = self.strFontString
+				strValue = self.arrFont
 			# End of case
 
 			case "FontWeight":
-				strValue = self.strFontWeight
+				strValue = self.arrFont[2]
 			# End of case
 
 			case "TextHeight":
@@ -286,7 +284,7 @@ class clCommon:
 		tNamedFonts = objLibTkFont.names()
 		for tNamedFont in tNamedFonts:
 			objFont = objLibTkFont.nametofont(tNamedFont)
-			objFont.config(family=self.strFontFamily, size=self.iFontSize, weight=self.strFontWeight, slant="roman", underline=0, overstrike=0)
+			objFont.config(family=self.arrFont[0], size=self.arrFont[1], weight=self.arrFont[2], slant="roman", underline=0, overstrike=0)
 		# End of for loop
 
 		objStyle = objLibTTK.Style()
@@ -295,7 +293,7 @@ class clCommon:
 					 selectbackground=[('readonly', '!focus', 'white')], fieldbackground=[('readonly', '!focus', 'white'),
 					('disabled', '#DCDAD5')], foreground=[('readonly', '!focus', 'black')])
 		# https://stackoverflow.com/questions/43086378/how-to-modify-ttk-combobox-fonts
-		objWindow.option_add('*TCombobox*Listbox.font', self.strFontString)
+		objWindow.option_add('*TCombobox*Listbox.font', self.arrFont)
 	# End of InitialiseScreenInfo()
 
 	def MapToScreenRatioH(self, iH):
