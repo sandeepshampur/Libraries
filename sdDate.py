@@ -11,7 +11,7 @@ from tkinter import font as objLibTkFont
 from tkinter import ttk as objLibTTK
 
 class clDate:
-	def __init__(self, iComponents, dictDefault, arrFont, dictColours, objCommon, objWindow):
+	def __init__(self, iComponents, dictDefault, arrFont, dictColours, objCommon, objParentWindow):
 		'''
 		Meaning of iComponents
 			1: Shows only date row
