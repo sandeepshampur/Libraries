@@ -318,7 +318,7 @@ class clDate:
 			objWidget.SetState(False)
 			objWidget = self.dictWidgets["Filters"]["Fields"]["Month"]
 			objWidget["state"] = "readonly"
-			objWidget.current(0)
+			objWidget.set("")
 			objWidget["state"] = "disabled"
 
 			objWidget = self.dictWidgets["Filters"]["Checkboxes"]["Year"]
