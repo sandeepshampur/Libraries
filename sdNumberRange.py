@@ -164,7 +164,7 @@ class clNumberRange:
 				case "<>":
 					iLeftEntry = int(self.objLeftEntry.GetValue() or 0)
 					iRightEntry = int(self.objRightEntry.GetValue() or 0)
-					if (iValue >= iLeftEntry) or (iValue <= iRightEntry):
+					if (iValue >= iLeftEntry) and (iValue <= iRightEntry):
 						bFlag = True
 					# End of if
 				# End of case
