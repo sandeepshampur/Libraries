@@ -1,5 +1,5 @@
 #
-# Completed : 19-August--2024
+# Completed : 20-August--2024
 #
 
 import tkinter as objLibTK
@@ -63,7 +63,7 @@ class clNumberRange:
 		self.cbComboBox = objLibTTK.Combobox(master=objFrame, state="readonly", values=self.ComboOptions)
 		self.cbComboBox.place(x=self.iPad, y=self.iPad, width=iComboW, height=iComboH)
 		self.cbComboBox.current(dictValues["ComboboxSelection"])
-		self.cbComboBox.bind("<<ComboboxSelected>>", self.HandlerCombobox)
+		self.cbComboBox.bind("<<ComboboxSelected>>", self._HandlerCombobox)
 
 		# Left Entry Widget --------------------------------------------------------------------------------------------------------------
 		iEntryX = iComboW + (self.iPad * 2)
@@ -75,7 +75,7 @@ class clNumberRange:
 		iEntryW = self.objCommon.GetFontInfo("TextWidth", strChars)
 
 		dictParams = { "strValue": dictValues["LeftEditBoxValue"], "maxChars": self.dictDefault["LeftEditBox"]["maxChars"], "charsAllowed": "\d+", "emptyAllowed": "no",
-					   "callback": self.HandlerEntryWidget, "callbackargs": ("Left", ), "iMin": self.dictDefault["LeftEditBox"]["iMin"],
+					   "callback": self._HandlerEntryWidget, "callbackargs": ("Left", ), "iMin": self.dictDefault["LeftEditBox"]["iMin"],
 					   "iMax": self.dictDefault["LeftEditBox"]["iMax"], "objCommon": self.objCommon }
 		self.objLeftEntry = self.objCommon.GetLibrary("sdEntryWidget", **dictParams)
 		self.objLeftEntry.Display(objFrame, iX=iEntryX, iY=self.iPad, iW=iEntryW, iH=iComboH, justify="center")
@@ -85,7 +85,7 @@ class clNumberRange:
 
 
 		dictParams = { "strValue": dictValues["RightEditBoxValue"], "maxChars": self.dictDefault["RightEditBox"]["maxChars"], "charsAllowed": "\d+", "emptyAllowed": "no",
-					   "callback": self.HandlerEntryWidget, "callbackargs": ("Right", ), "iMin": self.dictDefault["RightEditBox"]["iMin"],
+					   "callback": self._HandlerEntryWidget, "callbackargs": ("Right", ), "iMin": self.dictDefault["RightEditBox"]["iMin"],
 					   "iMax": self.dictDefault["RightEditBox"]["iMax"], "objCommon": self.objCommon }
 		self.objRightEntry = self.objCommon.GetLibrary("sdEntryWidget", **dictParams)
 		self.objRightEntry.Display(objFrame, iX=iEntryX, iY=self.iPad, iW=iEntryW, iH=iComboH, justify="center")
@@ -102,7 +102,90 @@ class clNumberRange:
 		return [iWidth, iHeight]
 	# End of Show()
 
-	def HandlerCombobox(self, objEvent=None):
+	def GetValues(self):
+		# arrValues = [">", 1, 1] or [">", "", ""]
+		arrValues = []
+
+		arrValues.append(self.cbComboBox.get())
+		arrValues.append(self.objLeftEntry.GetValue())
+		arrValues.append(self.objRightEntry.GetValue())
+
+		return arrValues
+	# End of GetValues()
+
+	def IsInRange(self, iValue):
+		bFlag = False
+
+		for x in range(1):
+			strCombobox = self.cbComboBox.get()
+			match strCombobox:
+				case "=":
+					iEntry = int(self.objLeftEntry.GetValue() or 0)
+					if iValue == iEntry:
+						bFlag = True
+					# End of if
+				# End of case
+
+				case "!=":
+					iEntry = int(self.objLeftEntry.GetValue() or 0)
+					if iValue != iEntry:
+						bFlag = True
+					# End of if
+				# End of case
+
+				case ">":
+					iEntry = int(self.objLeftEntry.GetValue() or 0)
+					if iValue > iEntry:
+						bFlag = True
+					# End of if
+				# End of case
+
+				case ">=":
+					iEntry = int(self.objLeftEntry.GetValue() or 0)
+					if iValue >= iEntry:
+						bFlag = True
+					# End of if
+				# End of case
+
+				case "<":
+					iEntry = int(self.objLeftEntry.GetValue() or 0)
+					if iValue < iEntry:
+						bFlag = True
+					# End of if
+				# End of case
+
+				case "<=":
+					iEntry = int(self.objLeftEntry.GetValue() or 0)
+					if iValue <= iEntry:
+						bFlag = True
+					# End of if
+				# End of case
+
+				case "<>":
+					iLeftEntry = int(self.objLeftEntry.GetValue() or 0)
+					iRightEntry = int(self.objRightEntry.GetValue() or 0)
+					if (iValue >= iLeftEntry) or (iValue <= iRightEntry):
+						bFlag = True
+					# End of if
+				# End of case
+			# End of match
+		# End of for loop
+
+		return bFlag
+	# End of IsInRange()
+
+	def Reset(self):
+		self.cbComboBox.current(self.dictDefault["ComboboxSelection"])
+		self._HandlerCombobox()
+	# End of Reset()
+
+	def Validate(self):
+		bValid = True
+
+		return bValid
+	# End of Validate()
+
+	def _HandlerCombobox(self, objEvent=None):
 		strSelection = self.cbComboBox.get()
 		iIndex = self.ComboOptions.index(strSelection)
 
@@ -119,9 +202,9 @@ class clNumberRange:
 		# End of if
 
 		self.objLeftEntry.SetValue(self.dictDefault["LeftEditBox"]["iMin"])
-	# End of HandlerCombobox()
+	# End of _HandlerCombobox()
 
-	def HandlerEntryWidget(self, iValue, strWhich):
+	def _HandlerEntryWidget(self, iValue, strWhich):
 		for x in range(1):
 			# Ignore if right widget is disabled
 			strState = self.objRightEntry.GetState()
@@ -159,10 +242,5 @@ class clNumberRange:
 				# End of case
 			# End of match
 		# End of for loop
-	# End of HandlerEntryWidget()
-
-	def Reset(self):
-		self.cbComboBox.current(self.dictDefault["ComboboxSelection"])
-		self.HandlerCombobox()
-	# End of Reset()
+	# End of _HandlerEntryWidget()
 # End of class clNumberRange
