@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-#	Completed : 19-August-2024
+#	Completed : 20-August-2024
 #
 
 import datetime as objLibDateTime
@@ -237,7 +237,7 @@ class clDate:
 			objWidget.current(0)
 
 			dtDate = self._GetDate("StartDate")
-			strDate = dtDate,strftime("%d-%b-%Y")
+			strDate = dtDate.strftime("%d-%b-%Y")
 			objWidget = self.dictWidgets["AddSubtract"]["Text"]
 			objWidget.SetValue(strDate)
 		# End of if
