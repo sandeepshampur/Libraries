@@ -44,7 +44,7 @@ class clDate:
 		self.arrFont = arrFont
 		self.dictColours = dictColours
 		self.objCommon = objCommon
-		self.objWindow = objParentWindow
+		self.objParentWindow = objParentWindow
 
 		self.iPad = 10
 		self.iHalfPad = int(self.iPad / 2)
@@ -58,7 +58,7 @@ class clDate:
 
 		dictParams = { "objCommon": self.objCommon }
 		self.objMessageBox = self.objCommon.GetLibrary("sdMessageBox", **dictParams)
-		self.objMessageBox.SetParentWindow(objWindow)
+		self.objMessageBox.SetParentWindow(objParentWindow)
 
 		self.dictWidgets = {"Images": []}
 		'''
@@ -704,7 +704,7 @@ class clDate:
 			# Display date picker
 			arrDate = [dtDate.day, dtDate.month, dtDate.year]
 			objWidget = self.dictWidgets[strKey]["DatePicker"]
-			strDate = objWidget.Display(self.objWindow, arrDate)
+			strDate = objWidget.Display(self.objParentWindow, arrDate)
 
 			if len(strDate) == 0:
 				break
