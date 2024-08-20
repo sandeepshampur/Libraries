@@ -159,15 +159,25 @@ class clDate:
 
 	def GetDate(self, strWhich="StartDate"):
 		# strWhich = "StartDate"|"EndDate"
-		# arrDate = [1, "Jan", 2024]
+		# arrDate = ["01", "Jan", "2024"]
 		arrDate = []
 
 		objWidget = self.dictWidgets[strWhich]["Day"]
-		arrDate.append(objWidget.GetValue())
+		iDay = int(objWidget.GetValue() or 0)
+		strDay = f'{iDay:02}'
+		arrDate.append(strDay)
 		objWidget = self.dictWidgets[strWhich]["Month"]
 		arrDate.append(objWidget.get())
 		objWidget = self.dictWidgets[strWhich]["Year"]
-		arrDate.append(objWidget.GetValue())
+		arrDate.append(str(objWidget.GetValue()))
+
+		strDate = "-".join(arrDate)
+		try:
+			dtDate = objLibDateTime.datetime.strptime(strDate, "%d-%b-%Y")
+		except:
+			dtDate = None
+		# End of try / except
+		arrDate.append(dtDate)
 
 		return arrDate
 	# End of GetDate()
@@ -192,6 +202,61 @@ class clDate:
 
 		return arrFilterValue
 	# End of GetFilterValues()
+
+	def IsInRange(self, strDate, strFormat):
+		bFlag = False
+
+		dtGivenDate = objLibDateTime.datetime.strptime(strDate, strFormat)
+
+		match self.iComponents:
+			case 1:
+				# Only date row
+				arrStart = self.GetDate("StartDate")
+				dtStart = arrStart[3]
+				if dtGivenDate == dtStart:
+					bFlag = True
+				# End of if
+			# End of case
+
+			case 2:
+				# Only date range
+				arrStart = self.GetDate("StartDate")
+				dtStart = arrStart[3]
+				arrEnd = self.GetDate("EndDate")
+				dtEnd = arrStart[3]
+				if (dtGivenDate >= dtStart) and (dtGivenDate <= dtEnd):
+					bFlag = True
+				# End of if
+			# End of case
+
+			case 3:
+				# Only filters
+				bFlag = self._CheckFilterRange(dtGivenDate)
+			# End of case
+
+			case 4:
+				# Date row with filters
+				arrStart = self.GetDate("StartDate")
+				dtStart = arrStart[3]
+				if dtGivenDate == dtStart:
+					bFlag = self._CheckFilterRange(dtGivenDate)
+				# End of if
+			# End of case
+
+			case 5:
+				# Date range with filters
+				arrStart = self.GetDate("StartDate")
+				dtStart = arrStart[3]
+				arrEnd = self.GetDate("EndDate")
+				dtEnd = arrEnd[3]
+				if (dtGivenDate >= dtStart) and (dtGivenDate <= dtEnd):
+					bFlag = self._CheckFilterRange(dtGivenDate)
+				# End of if
+			# End of case
+		# End of match
+
+		return bFlag
+	# End of IsInRange()
 
 	def Reset(self):
 		if "StartDate" in self.dictWidgets:
@@ -760,6 +825,65 @@ class clDate:
 			objWidget.SetValueDisabled(strDate)
 		# End of if
 	# End of _CalculateDateString()
+
+	def _CheckFilterRange(self, dtGivenDate):
+		for x in range(1):
+			bFlag = False
+
+			# Get filter values
+			arrFilterValues = self.GetFilterValues()
+			iDay = int(arrFilterValues[0] or 0)
+			arrFilterValues[0] = f'{iDay:02}'
+			arrFilterValues[2] = str(arrFilterValues[2])
+
+			strDate = "-".join(arrFilterValues)
+			try:
+				dtFilterDate = objLibDateTime.datetime.strptime(strDate, "%d-%b-%Y")
+			except:
+				dtFilterDate = None
+			# End of try / except
+
+			# Date comparision
+			if dtFilterDate is not None:
+				if dtGivenDate == dtFilterDate:
+					bFlag = True
+				# End of if
+				break
+			# End of if
+
+			# Check day
+			iDay = int(arrFilterValues[0] or 0)
+			if iDay != 0:
+				if dtGivenDate.day != iDay:
+					break
+				# End of if
+				# Fall through
+			# End of if
+
+			# Check month
+			strMonth = arrFilterValues[1]
+			if len(strMonth) != 0:
+				dtFilterMonth = objLibDateTime.datetime.strptime(strMonth, "%b")
+				if dtGivenDate.month != dtFilterMonth.month:
+					break
+				# End of if
+				# Fall through
+			# End of if
+
+			# Check year
+			iYear = int(arrFilterValues[2] or 0)
+			if iYear != 0:
+				if dtGivenDate.year != iYear:
+					break
+				# End of if
+				# Fall through
+			# End of if
+
+			bFlag = True
+		# End of for loop
+
+		return bFlag
+	# End of _CheckFilterRange()
 
 	def _GetDate(self, strKey):
 		objWidgetDay = self.dictWidgets[strKey]["Day"]
