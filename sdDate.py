@@ -44,7 +44,7 @@ class clDate:
 		self.arrFont = arrFont
 		self.dictColours = dictColours
 		self.objCommon = objCommon
-		self.objWindow = objWindow
+		self.objWindow = objParentWindow
 
 		self.iPad = 10
 		self.iHalfPad = int(self.iPad / 2)
