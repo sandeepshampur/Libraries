@@ -2,23 +2,28 @@
 # Started   : 28-June-2024
 # Completed : 01-July-2024
 #
-# Enhancement : 05-Aug-2024 : Revamped logic by adding INI file based query
+# Enhancement : 23-Aug-2024 : 1. Revamped logic by adding INI file based query
+#							  2. Added function "RegExp()"
 #
 
 import os as objLibOS
+import re as objLibRE
 import sdIniParser as objLibIniParser
 import sqlite3 as objSQLite
 
 class clDatabase:
-	def __init__(self, strDatabaseFile="Database.db", strIniFile="Database.ini", objLoggerLog=None):
+	def __init__(self, strPath, strDatabaseFile, strIniFile, objCommon, objLoggerLog):
 		# Initialise
-		self.strDatabaseFile = strDatabaseFile
+		self.strDatabaseFile = objLibOS.path.join(strPath, strDatabaseFile)
+		strIniFile = objLibOS.path.join(strPath, strIniFile)
+		self.objCommon = objCommon
 		self.objLoggerLog = objLoggerLog
 
 		self.objDatabase = None
 		self.objCursor = None
 
-		self.objIniParser = objLibIniParser.clIniParser(strIniFile)
+		dictParams = { "strIniFile": strIniFile }
+		self.objIniParser = self.objCommon.GetLibrary("sdIniParser", **dictParams)
 	# End of __init__()
 
 	def ClearDb(self):
@@ -73,6 +78,7 @@ class clDatabase:
 				break
 			# End of try/except
 
+			self.objDatabase.create_function("REGEXP", 2, self.RegExp)
 			self.objCursor = self.objDatabase.cursor()
 
 			if self.objLoggerLog is not None:
@@ -174,6 +180,14 @@ class clDatabase:
 	def GetIniQuery(self, strSection, strKey):
 		return self.objIniParser.GetItem(strSection, strKey)
 	# End of GetIniQuery()
+
+	def RegExp(self, strExpression, strItem):
+		objRE = objLibRE.compile(strExpression)
+		objResult = objRE.search(strItem)
+		bReturn = False if objResult is None else True
+
+		return bReturn
+	# End of RegExp()
 
 	def WriteMany(self, strSection, strKey, arrRecords):
 		'''
