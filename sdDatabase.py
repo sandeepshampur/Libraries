@@ -193,7 +193,7 @@ class clDatabase:
 		'''
 		Structure of arrRecords
 		arrRecords = [
-			["field 1 value", "field 1 value", ...],
+			["field 1 value", "field 2 value", ...],
 			...
 		]
 		'''
@@ -230,9 +230,7 @@ class clDatabase:
 	def WriteOne(self, strSection, strKey, arrRecord):
 		'''
 		Structure of arrRecord
-		arrRecord = [
-			["field 1 value", "field 1 value", ...]
-		]
+		arrRecord = ["field 1 value", "field 2 value", ...]
 		'''
 
 		for x in range(1):
@@ -243,7 +241,7 @@ class clDatabase:
 
 			strQuery = self.objIniParser.GetItem(strSection, strKey)
 
-			strQuestionMarks = ",".join("?" * len(arrRecord[0]))
+			strQuestionMarks = ",".join("?" * len(arrRecord))
 			arrQuery = strQuery.split("|-?-|")
 			strQuery = "".join([arrQuery[0], strQuestionMarks, arrQuery[1]])
 
