@@ -1,5 +1,5 @@
 #
-# Completed: 19-August-2024
+# Completed: 25-August-2024
 #
 #											IMPORTANT
 # Below naming convention has to be used to import "sd*" libraries to avoid failure of "GetLibrary()" function
@@ -202,6 +202,10 @@ class clCommon:
 
 		return strValue
 	# End of ScreenInfo()
+
+	def GetIniValue(self, strSection, strKey=""):
+		return self.objIniParser.GetItem(strSection, strKey)
+	# End of if
 
 	def GetLibrary(self, strLibrary, **dictParameters):
 		'''
