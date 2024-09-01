@@ -11,7 +11,7 @@
 #							  2. Added function to get size of widget "GetSize()"
 #							  3. Added functions "SetMaxChars()", "GetBg()", "GetPlaceInfo()", "Forget()", "Place()", "GetName()", "SetName()", "Bind()"
 #
-# Fix /		  : 13-Aug-2024 : 1. Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
+# Fix /		  : 01-Sep-2024 : 1. Changed method of setting value in the widget from "vWidget.set" to "Wiget.insert()" and added code to disable / enable validation
 # Enhancement				  2. Added function "SetValueDisabled()", "SetOption()", "SetBackground()"
 #							  3. Changed functions "GetBg()" and "SetBg()" to "GetOption()"
 #							  4. Modified "SetStatus()" to take status value and set background colour
@@ -26,17 +26,18 @@ from tkinter import Entry as objLibEntry
 from re import compile as objRECompile
 
 class clEntryWidget:
-	def __init__(self, strValue, strState, arrFont, maxChars, charsAllowed, emptyAllowed, tooltip, callback, callbackargs, iMin, iMax,
+	def __init__(self, strValue, strState, arrFont, maxChars, charsAllowed, emptyAllowed, tooltip, tooltipPos, callback, callbackargs, iMin, iMax,
 				 bTriggerCallback, dictColours, objCommon):
 		# Save parameters
 		self.strValue = strValue
 		self.strState = strState
-		self.strFont = arrFont[0]
+		self.arrFont = arrFont
 		self.iMaxChars = maxChars
 		strAllowed = "".join(["^", charsAllowed, "$"])
 		self.charsAllowed = objRECompile(strAllowed)
 		self.emptyAllowed = emptyAllowed.lower()
 		self.tooltip = tooltip
+		self.tooltipPos = tooltipPos
 		self.objCallback = callback
 		self.tpCallbackArgs = callbackargs
 		self.iMin = iMin
@@ -54,7 +55,7 @@ class clEntryWidget:
 		self.vWidget = objLibStringVar()
 		self.Widget = objLibEntry(objMaster, justify=justify, textvariable=self.vWidget, validate="key", foreground=self.dictColours["fg"],
 								  background=self.dictColours["bg"], disabledforeground=self.dictColours["dfg"],
-								  disabledbackground=self.dictColours["dbg"], font=self.strFont)
+								  disabledbackground=self.dictColours["dbg"], font=self.arrFont)
 
 		if (iW != -1) and (iH != -1):
 			self.Widget.place(x=iX, y=iY, width=iW, height=iH)
@@ -66,7 +67,7 @@ class clEntryWidget:
 			self.Widget.place(x=iX, y=iY, width=iW)
 		# End of if
 
-		dictParams = { "objWidget": self.Widget }
+		dictParams = { "objWidget": self.Widget, "strMessage": self.tooltip, "strPosition": self.tooltipPos }
 		self.WidgetTT = self.objCommon.GetLibrary("sdTooltip", **dictParams)
 
 		# Configure
@@ -258,9 +259,11 @@ class clEntryWidget:
 		self.bTriggerCallback = bTriggerCallback
 	# End of SetCallbackTrigger()
 
-	def SetFont(self, strValue):
-		self.Widget.configure(font=strValue)
-		self.strFont = strValue
+	def SetFont(self, arrValue):
+		# Sample arrValue = ["Liberation Sans", 12, "normal"]
+		self.Widget.configure(font=arrValue)
+		self.arrFont.clear()
+		self.arrFont = arrValue.copy()
 	# End of SetFont()
 
 	def SetFocus(self):
