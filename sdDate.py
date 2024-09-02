@@ -3,6 +3,8 @@
 #
 #	Completed : 20-August-2024
 #
+# Fix : 02-Sep-2024 : Added code to set default values in "_CreateFilters()"
+#
 
 import datetime as objLibDateTime
 from dateutil.relativedelta import relativedelta as objLibRelativeDelta
@@ -28,9 +30,9 @@ class clDate:
 				"Year": 2024
 			},
 			"Filters": {
-				"Day": [False, 0], # True = checked; date value
-				"Month": [False, 0], # True = checked; month value (0 = Jan)
-				"Year": [False, 0] # # True = checked; year value
+				"Day": [False, ""], # True = checked; date value
+				"Month": [False, ""], # True = checked; month value (0 = Jan)
+				"Year": [False, ""] # # True = checked; year value
 			},
 			"StartDate": {
 				"Day": 1,
@@ -541,6 +543,14 @@ class clDate:
 		self.dictWidgets["Filters"]["Checkboxes"] = {}
 		self.dictWidgets["Filters"]["Fields"] = {}
 
+		'''
+		self.dictValues
+			"Filters": {
+				"Day": [False, 0], # True = checked; date value
+				"Month": [False, 0], # True = checked; month value (0 = Jan)
+				"Year": [False, 0] # # True = checked; year value
+			},
+		'''
 		dictInfo = {
 			"Labels": ["Day", "Month", "Year"],
 			"MaxChars": [2, 0, 4],
@@ -556,20 +566,32 @@ class clDate:
 			objWidget.Display(objFilterFrame, iWidgetX, iWidgetFilterY, icbWH, iDescW=icbLbW, iDescH=self.ilbH, strLabel=strLabel, bChecked=False)
 			objWidget.Bind(self._HandlerCheckbutton, (strLabel,))
 			self.dictWidgets["Filters"]["Checkboxes"][strLabel] = objWidget
+			if self.dictValues["Filters"][strLabel][0]:
+				objWidget.SetState(True)
+			# End of if
 
 			iWidgetFilterY += self.ilbH
 			if strLabel.find("Month") == -1:
-				dictParams = { "strState": "disabled", "maxChars": dictInfo["MaxChars"][iIndex], "charsAllowed": "\d+", "emptyAllowed": "no",
-							   "callback": self._HandlerEntryWidget, "callbackargs": ("Filters", strLabel,), "iMin": dictInfo["iMin"][iIndex],
-							   "iMax": dictInfo["iMax"][iIndex], "objCommon": self.objCommon }
+				if self.dictValues["Filters"][strLabel][0]:
+					strState = "normal"
+				else:
+					strState = "disabled"
+				# End of if
+				dictParams = { "strValue": self.dictValues["Filters"][strLabel][1], "strState": strState, "maxChars": dictInfo["MaxChars"][iIndex],
+							   "charsAllowed": "\d+", "emptyAllowed": "no", "callback": self._HandlerEntryWidget, "callbackargs": ("Filters", strLabel,),
+							   "iMin": dictInfo["iMin"][iIndex], "iMax": dictInfo["iMax"][iIndex], "objCommon": self.objCommon }
 				objWidget = self.objCommon.GetLibrary("sdEntryWidget", **dictParams)
 				objWidget.Display(objFilterFrame, iX=iWidgetX, iY=iWidgetFilterY, iW=iWidgetW, iH=self.ilbH, justify="center")
 				self.dictWidgets["Filters"]["Fields"][strLabel] = objWidget
 			else:
 				objWidget = objLibTTK.Combobox(master=objFilterFrame, state="readonly", values=self.arrMonth)
 				objWidget.place(x=iWidgetX, y=iWidgetFilterY, width=iWidgetW, height=self.ilbH)
-				objWidget.set("")
-				objWidget.config(state="disabled")
+				if self.dictValues["Filters"][strLabel][0]:
+					objWidget.current(self.dictValues["Filters"][strLabel][1])
+				else:
+					objWidget.set("")
+					objWidget.config(state="disabled")
+				# End of if
 				objWidget.bind("<<ComboboxSelected>>", lambda _: self._HandlerCombobox("Filters"))
 				self.dictWidgets["Filters"]["Fields"][strLabel] = objWidget
 			# End of if
