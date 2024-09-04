@@ -1,6 +1,8 @@
 #
 # Completed : 20-August--2024
 #
+# Enhancement : 04-Sep-2024 : Added code in "GetValues()" to convert numbers to integers
+#
 
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
@@ -107,8 +109,20 @@ class clNumberRange:
 		arrValues = []
 
 		arrValues.append(self.cbComboBox.get())
-		arrValues.append(self.objLeftEntry.GetValue())
-		arrValues.append(self.objRightEntry.GetValue())
+
+		strValue = self.objLeftEntry.GetValue()
+		if len(strValue) > 0:
+			arrValues.append(int(strValue))
+		else:
+			arrValues.append("")
+		# End of if
+
+		strValue = self.objRightEntry.GetValue()
+		if len(strValue) > 0:
+			arrValues.append(int(strValue))
+		else:
+			arrValues.append("")
+		# End of if
 
 		return arrValues
 	# End of GetValues()
