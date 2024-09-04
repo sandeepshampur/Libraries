@@ -15,6 +15,7 @@
 # Enhancement : 19-Aug-2024 : 1. Modified "Insert()" to accept position to insert
 #							  2. Added function "Move()"
 #							  3. Moved colours to dictionary
+# Fix		  : 03-Sep-2024 : Removed hardcoded value in "Enable()"
 #
 
 import datetime as objDateTime
@@ -135,8 +136,9 @@ class clListBoxMultiColumn:
 		self.tvRecords.configure(selectmode="none")
 	# End of Disable()
 
-	def Enable(self):
-		self.tvRecords.configure(selectmode="extended")
+	def Enable(self, strMode):
+		# strMode : "browse"|"extended"
+		self.tvRecords.configure(selectmode=strMode)
 	# End of Enable()
 	
 	def GetCount(self):
