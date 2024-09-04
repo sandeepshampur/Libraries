@@ -1,7 +1,8 @@
 #
 # Completed : 20-August--2024
 #
-# Enhancement : 04-Sep-2024 : Added code in "GetValues()" to convert numbers to integers
+# Enhancement : 04-Sep-2024 : 1. Added code in "GetValues()" to convert numbers to integers
+#							  2. Added code in "Validate()"
 #
 
 import tkinter as objLibTK
@@ -194,7 +195,32 @@ class clNumberRange:
 	# End of Reset()
 
 	def Validate(self):
-		bValid = True
+		for x in range(1):
+			bValid = True
+			strLeftEntry = self.objLeftEntry.GetValue()
+			if len(strLeftEntry) == 0:
+				bValid = False
+				break
+			# End of if
+
+			strSelection = self.cbComboBox.get()
+			if strSelection.find("<>") == -1:
+				break
+			# End of if
+
+			# Validate "<>" case
+			strRightEntry = self.objRightEntry.GetValue()
+			if len(strRightEntry) == 0:
+				bValid = False
+				break
+			# End of if
+
+			iLeftEntry = int(strLeftEntry)
+			iRightEntry = int(strRightEntry)
+			if (iLeftEntry > iRightEntry):
+				bValid = False
+			# End of if
+		# End of for loop
 
 		return bValid
 	# End of Validate()
