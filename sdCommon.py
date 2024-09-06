@@ -5,6 +5,8 @@
 # Below naming convention has to be used to import "sd*" libraries to avoid failure of "GetLibrary()" function
 # E.g. sdCanvas as objLibSDCanvas ie, add "objLib" to the beginning and capitalise "sd" to "SD"
 #
+# Fix : 06-Sep-2024 : Removed code in "GetLibrary()" that was causing it to return "None" as library object
+#
 
 import sys as objLibSys
 objLibSys.dont_write_bytecode = True
@@ -216,9 +218,6 @@ class clCommon:
 		'''
 		for x in range(1):
 			objLibrary = None
-			if self.bFatalError:
-				break
-			# End of Get()
 
 			# Get parameter names for library
 			strValue = self.objIniParser.GetItem(strLibrary, "InitParameters")
