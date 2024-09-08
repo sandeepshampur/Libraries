@@ -5,12 +5,15 @@
 # Below naming convention has to be used to import "sd*" libraries to avoid failure of "GetLibrary()" function
 # E.g. sdCanvas as objLibSDCanvas ie, add "objLib" to the beginning and capitalise "sd" to "SD"
 #
-# Fix : 06-Sep-2024 : Removed code in "GetLibrary()" that was causing it to return "None" as library object
+# Fix : 08-Sep-2024 : 1. Removed code in "GetLibrary()" that was causing it to return "None" as library object
+#					  2. Added code to insert "Data" in path
 #
 
 import sys as objLibSys
+from os.path import join as objLibOSPathJoin
 objLibSys.dont_write_bytecode = True
-objLibSys.path.insert(1, "Data")
+strDataPath = objLibOSPathJoin(objLibSys.path[0], "Data")
+objLibSys.path.insert(1, strDataPath)
 
 import sdImportDecider as objLibImportDecider
 import sdIniParser as objLibSDIniParser
@@ -74,7 +77,6 @@ if objLibImportDecider.sdTooltip:
 
 import ast as objLibAST
 import os as objLibOS
-from os.path import join as objLibOSPathJoin
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
 from tkinter import messagebox as objLibTKMessageBox
@@ -142,9 +144,9 @@ class clCommon:
 		self.arrError = []
 		tIniEntries = self.objIniParser.GetItem("Environment")
 		for tIniEntry in tIniEntries:
-			strValue = tIniEntry[1]
-			if not objLibOS.path.isfile(strValue):
-				self.arrError.append(strValue)
+			strPath = objLibOSPathJoin(self.strWorkingDir, tIniEntry[1])
+			if not objLibOS.path.isfile(strPath):
+				self.arrError.append(strPath)
 			# End of if
 		# End of for loop
 
