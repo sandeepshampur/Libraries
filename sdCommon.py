@@ -66,6 +66,9 @@ if objLibImportDecider.sdNumberRange:
 if objLibImportDecider.sdProgressBar:
 	import sdProgressBar as objLibSDProgressBar
 
+if objLibImportDecider.sdTime:
+	import sdTime as objLibSDTime
+
 if objLibImportDecider.sdTimePicker:
 	import sdTimePicker as objLibSDTimePicker
 
