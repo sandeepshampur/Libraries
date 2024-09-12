@@ -7,10 +7,7 @@
 #
 
 from datetime import datetime as objLibDateTime
-import time as objLibTime
 import tkinter as objLibTK
-from tkinter import font as objLibTkFont
-from tkinter import messagebox
 
 class clTimePicker:
 	def __init__(self, arrFont, dictColours, objCallback, objCommon):
