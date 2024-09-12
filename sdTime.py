@@ -204,7 +204,6 @@ class clTime:
 
 	def _HandlerbtnTimePicker(self):
 		strPickedTime = self.objTimePicker.Show(self.objParentWindow, -1, -1, self.bAllowPastTime)
-		self.objTimePicker.Reset()
 		if len(strPickedTime) > 0:
 			iHour = int(strPickedTime[:2])
 			self.dictWidgets["Texts"]["Hour"].SetValue(iHour)
