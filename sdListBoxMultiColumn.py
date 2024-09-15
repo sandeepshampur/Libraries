@@ -15,7 +15,8 @@
 # Enhancement : 19-Aug-2024 : 1. Modified "Insert()" to accept position to insert
 #							  2. Added function "Move()"
 #							  3. Moved colours to dictionary
-# Fix		  : 03-Sep-2024 : Removed hardcoded value in "Enable()"
+# Fix		  : 15-Sep-2024 : Removed hardcoded value in "Enable()"
+# Enhancement : 15-Sep-2024 : Added sort function "_sort_by_datetime()"
 #
 
 import datetime as objDateTime
@@ -330,12 +331,13 @@ class clListBoxMultiColumnSort(objTTK.Treeview):
 		Particulars	:	Key				: Description
 	===========================================================================================
 	1. Date			:	"date"			: Date with zero padding e.g.: 1973-10-03
-	2. Float		:	"float"			: Float number e.g.: 12.0
-	3. Multidecimal	:	"multidecimal" 	: Numbers with multiple periods e.g.: 12.5.7.12
-	4. Number		:	"num"			: Integers
-	5. Number		:	"numcomma"		: Numbers with comma e.g.: 12,000
-	6. Name			:	"name"			: Text
-	7. Time			:	"time"			: Time in 12 format with zero padding e.g.: 11:03PM
+	2. Data / Time	: 	"datetime"		: Date / time with zero padding e.g. 1973-10-03 07:30 AM
+	3. Float		:	"float"			: Float number e.g.: 12.0
+	4. Multidecimal	:	"multidecimal" 	: Numbers with multiple periods e.g.: 12.5.7.12
+	5. Number		:	"num"			: Integers
+	6. Number		:	"numcomma"		: Numbers with comma e.g.: 12,000
+	7. Name			:	"name"			: Text
+	8. Time			:	"time"			: Time in 12 format with zero padding e.g.: 11:03PM
 
 	Sorting type defaults to "name" for invalid key
 	LIMITATION of "multidecimal":
@@ -350,7 +352,7 @@ class clListBoxMultiColumnSort(objTTK.Treeview):
 		super(clListBoxMultiColumnSort, self).__init__(master=master, **kwargs)
 
 		# Sorting key array. This has to be updated when any new sorting function is added
-		self.arrSortKeys = ["date", "float", "multidecimal", "num", "numcomma", "name", "time"]
+		self.arrSortKeys = ["date", "float", "multidecimal", "num", "numcomma", "name", "time", "datetime"]
 
 		# Row colouring
 		self.tag_configure("tgEvenRow", background=tagBgEven)
@@ -419,13 +421,23 @@ class clListBoxMultiColumnSort(objTTK.Treeview):
 				# Very old date
 				string = "1973-10-03"
 			# End of if
-
-			# End of try / except
 			return objDateTime.datetime.strptime(string, "%Y-%m-%d")
 		# End of _str_to_date()
 
 		self._sort(column, reverse, _str_to_date, self._sort_by_date)
 	# End of _sort_by_date()
+
+	def _sort_by_datetime(self, column, reverse):
+		def _str_to_datetime(string):
+			if len(string) == 0:
+				# Very old date / time
+				string = "1973-10-03 06:00 AM"
+			# End of if
+			return objDateTime.datetime.strptime(string.upper(), "%Y-%m-%d %I:%M %p")
+		# End of _str_to_datetime()
+
+		self._sort(column, reverse, _str_to_datetime, self._sort_by_datetime)
+	# End of _sort_by_datetime()
 
 	def _sort_by_float(self, column, reverse):
 		self._sort(column, reverse, float, self._sort_by_float)
