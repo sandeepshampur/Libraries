@@ -4,7 +4,7 @@
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
 # Fix 		  : 13-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
-# Enhancement : 13-Aug-2024 : 1. Added function "ReplaceMessage()"
+# Enhancement : 18-Sep-2024 : 1. Added function "ReplaceMessage()", "SetTooltipPosition()"
 #							  2. Moved colours to dictionary
 #							  3. Added font
 #
@@ -33,7 +33,7 @@ class clTooltip:
 		self.objToolTipWin.attributes("-topmost", True)
 		objFrame = objLibTK.Frame(self.objToolTipWin, borderwidth=0, background=self.dictColours["colourBg"])
 		self.lbMessage = objLibTK.Label(objFrame, text=strMessage, justify=objLibTK.LEFT, background=self.dictColours["colourBg"],
-										foreground=self.dictColours["colourFg"], relief=objLibTK.SOLID, borderwidth=0, wraplength=250, font=(self.arrFont[0]))
+										foreground=self.dictColours["colourFg"], relief=objLibTK.SOLID, borderwidth=0, wraplength=250, font=self.arrFont)
 		self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
 		objFrame.grid()
 		self.lbMessage.update()
@@ -168,6 +168,10 @@ class clTooltip:
 			# End of if
 		# End of for loop
 	# End of SetMessage()
+
+	def SetTooltipPosition(self, strPosition):
+		self.strTTPosition = strPosition
+	# End of SetTooltipPosition()
 
 	def ShowTip(self, objEvent=None):
 		for x in range(1):
