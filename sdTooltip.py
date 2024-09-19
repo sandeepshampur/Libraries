@@ -4,9 +4,10 @@
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
 # Fix 		  : 13-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
-# Enhancement : 18-Sep-2024 : 1. Added function "ReplaceMessage()", "SetTooltipPosition()"
+# Enhancement : 19-Sep-2024 : 1. Added function "ReplaceMessage()", "SetTooltipPosition()"
 #							  2. Moved colours to dictionary
 #							  3. Added font
+#							  4. Added code to close tip when cursor enters tooltip window.
 #
 
 from re import sub as objRESub
@@ -50,6 +51,8 @@ class clTooltip:
 		# Bind to mouse
 		self.objWidget.bind("<Enter>", self.ShowTip)
 		self.objWidget.bind("<Leave>", self.CloseTip)
+
+		self.objToolTipWin.bind("<Enter>", self.CloseTip)
 
 		# Get screen dimensions
 		self.iScrW = self.objWidget.winfo_screenwidth()
@@ -182,6 +185,8 @@ class clTooltip:
 			if self.IsShowing:
 				break
 			# End of if
+
+			print("Tooltip", objEvent)
 
 			# Get widget position
 			self.objWidget.update()
