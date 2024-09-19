@@ -1,24 +1,22 @@
 #
 # Completed : 21-February-2022
 #
-# Enhencement : 09-Aug-2024 : 1. Added parameter "font" to "__init__()". Changed default value of "colourLabelBg"
+# Enhencement : 19-Sep-2024 : 1. Added parameter "font" to "__init__()". Changed default value of "colourLabelBg"
 #							  2. Added code to vertically center the checkbox with respect to label height
+#							  3. Modified code to match changes in library
 #
 
-import sdCanvas as objLibCanvas
+from os.path import join as objLibOSPathJoin
 import threading as objLibThreading
 import tkinter as objLibTK
 from tkinter import ttk as objLibTTK
 
 class clCheckbutton:
-	def __init__(self, strTickMarkPath, colourTickBg="white", colourTickBgDisabled="#DCDAD5", colourLabelFg="black",
-				 colourLabelBg="#d9d9d9", font="Arial 12 normal"):
-		self.strTickMarkPath = strTickMarkPath
-		self.colourTickBg = colourTickBg
-		self.colourTickBgDisabled = colourTickBgDisabled
-		self.colourLabelBg = colourLabelBg
-		self.colourLabelFg = colourLabelFg
-		self.strFont = font
+	def __init__(self, dictImage, arrFont, dictColours, objCommon):
+		self.dictImage = dictImage
+		self.arrFont = arrFont
+		self.dictColours = dictColours
+		self.objCommon = objCommon
 
 		self.bChecked = True
 		self.bDisabled = False
@@ -44,27 +42,29 @@ class clCheckbutton:
 			ilbY = iY + int((iDescH / 2) - (iTickMarkWH / 2))
 		# End of if
 
-		objLabel = objLibTK.Label(objMaster, background=self.colourTickBg, borderwidth=1, relief="solid", font=self.strFont)
+		objLabel = objLibTK.Label(objMaster, background=self.dictColours["colourTickBg"], borderwidth=1, relief="solid", font=self.arrFont)
 		objLabel.place(x=iX, y=ilbY, width=iTickMarkWH, height=iTickMarkWH)
 
 		# Canvas
-		self.objCanvas = objLibCanvas.clCanvas()
-		self.objCanvas.CreateImage(self.strTickMarkPath, iTickMarkWH, iTickMarkWH)
-		dictDim = self.objCanvas.GetDimensions()
-		self.imgTickMark = dictDim["Image"]
-		self.objCanvas.CreateCanvas(objLabel, 0, 0, self.colourTickBg, iW=iTickMarkWH, iH=iTickMarkWH)
-		self.objCanvas.Bind("<Button-1>", self.HandlerClick)
+		dictParams = { "objCommon": self.objCommon }
+		self.objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
+
+		iPad = 2
+		iImgPad = (iPad * 2)
+		strTickMarkPath = objLibOSPathJoin(self.dictImage["Path"], self.dictImage["File"])
+		self.objCanvas.CreateCanvasToFitImage(objLabel, strTickMarkPath, iPad, iPad, self.dictColours["colourTickBg"], iTickMarkWH-iImgPad, iTickMarkWH-iImgPad)
+		self.objCanvas.Bind("<Button-1>", lambda _: self.HandlerClick())
 
 		if not bChecked:
-			self.objCanvas.Clear()
+			self.objCanvas.ChangeImageVisibility(strState="hidden")
 		# End of if
 
 		# Description -------------------------------------------------------------
 		if iDescW > 0:
 			ilbX = iX + iTickMarkWH + 5
 
-			objLabel = objLibTK.Label(objMaster, text=strLabel, anchor="w", foreground=self.colourLabelFg, background=self.colourLabelBg,
-									  font=self.strFont)
+			objLabel = objLibTK.Label(objMaster, text=strLabel, anchor="w", foreground=self.dictColours["colourLabelFg"],
+									  background=self.dictColours["colourLabelBg"], font=self.arrFont)
 			objLabel.place(x=ilbX, y=iY, width=iDescW, height=iDescH)
 			objLabel.bind("<Button-1>", lambda _: self.HandlerClick())
 		# End of if
@@ -80,10 +80,10 @@ class clCheckbutton:
 
 			if self.bChecked:
 				self.bChecked = False
-				self.objCanvas.Clear()
+				self.objCanvas.ChangeImageVisibility(strState="hidden")
 			else:
 				self.bChecked = True
-				self.objCanvas.AddImage(0, 0, objImg=self.imgTickMark)
+				self.objCanvas.ChangeImageVisibility(strState="normal")
 			# End of if
 
 			if not self.bTriggerCallback:
@@ -107,13 +107,13 @@ class clCheckbutton:
 
 	def Disable(self):
 		self.bDisabled = True
-		self.objCanvas.SetBackgroundColour(self.colourTickBgDisabled)
+		self.objCanvas.SetBackgroundColour(self.dictColours["colourTickBgDisabled"])
 		self.bTriggerCallback = False
 	# End of Disable()
 
 	def Enable(self):
 		self.bDisabled = False
-		self.objCanvas.SetBackgroundColour(self.colourTickBg)
+		self.objCanvas.SetBackgroundColour(self.dictColours["colourTickBg"])
 		self.bTriggerCallback = True
 	# End of Enable()
 
@@ -125,9 +125,9 @@ class clCheckbutton:
 		self.bChecked = bChecked
 
 		if self.bChecked:
-			self.objCanvas.AddImage(0, 0, objImg=self.imgTickMark)
+			self.objCanvas.ChangeImageVisibility(strState="normal")
 		else:
-			self.objCanvas.Clear()
+			self.objCanvas.ChangeImageVisibility(strState="hidden")
 		# End of if
 	# End of SetState()
 
