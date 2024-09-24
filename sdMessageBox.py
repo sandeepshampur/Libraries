@@ -11,10 +11,11 @@
 #							  2. Redid logic of CreateWindow()
 #							  3. Added function StandAlone()
 # Fix		  : 07-Aug-2024 : Corrected Window width calculation in "CreateWindow()"
-# Enhancement : 13-Aug-2024 : 1. Added default button text in "Show*()" functions
+# Enhancement : 24-Sep-2024 : 1. Added default button text in "Show*()" functions
 #							  2. Added function "SetParentWindow()" and removed passing it as parameter in "Show*()" functions
 #							  3. Added code to customise colours during call to "__init__()"
 #							  4. Added objCommon parameter
+#							  5. Modified code to match changes in libraries
 #
 
 import os as objLibOS
@@ -33,14 +34,15 @@ class clMessageBox:
 		self.objCommon = objCommon
 
 		self.objParentWindow = None
-		self.dictImages = {"Error": None, "Information": None, "Question": None, "Warning": None}
 		self.strBtnOption = ""
-		self.bFontInitialised = False
+		self.bInitialised = False
 		dictParams = { "objCommon":self.objCommon}
 		self.objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
 	# End of __init__()
 
 	def _CreateWindow(self, strMBType, strTitle, strMsg, iX, iY, strButton1Text, strButton2Text, strButton3Text, colourFg, colourBg):
+		self.strMBType = strMBType
+
 		objWindow = objLibTK.Toplevel(self.objParentWindow)
 		objWindow.grab_set()
 		objWindow.withdraw()
@@ -48,33 +50,17 @@ class clMessageBox:
 		self.objWindow = objWindow
 
 		# Initialise
-		if not self.bFontInitialised:
-			objFont = objLibTkFont.Font(family=self.arrFont[1][0], size=self.arrFont[1][1], weight=self.arrFont[1][2])
-			self.itxtH = objFont.metrics("linespace")
-			self.itxtW = objFont.measure("W")
+		if not self.bInitialised:
+			self.itxtH = self.objCommon.GetFontInfo("TextHeight")
+			self.itxtW = self.objCommon.GetFontInfo("TextWidth")
 			self.iImgWH = self.itxtH * 3
-
-			# Create images
-			for strKey in self.dictImages:
-				strPath = objLibOSPathJoin(self.strImgPath, self.dictFileNames[strKey])
-				try:
-					self.objCanvas.CreateImage(strPath, self.iImgWH, self.iImgWH)
-				except:
-					continue
-				# End of try / except
-
-				dictDim = self.objCanvas.GetDimensions()
-				self.dictImages[strKey] = dictDim["Image"]
-			# End of for loop
-
-			self.bFontInitialised = True
 		# End of if
 
 		# Border
 		objfrBorder = objLibTK.Frame(objWindow, borderwidth=4, relief="ridge", background=colourBg)
 
 		# ------------------------- Heading -------------------------
-		tFont = (self.arrFont[1][0], self.arrFont[1][1], "bold")
+		tFont = (self.arrFont[0], self.arrFont[1], "bold")
 		objHdrLabel = objLibTK.Label(objWindow, text=strTitle, anchor="center", font=tFont, fg=colourFg, bg=colourBg)
 		iHdrlbW = objHdrLabel.winfo_reqwidth()
 		iHdrlbH = objHdrLabel.winfo_reqheight()
@@ -83,7 +69,7 @@ class clMessageBox:
 		iMsglbY = iHdrlbH + 10
 		iMsglbW = self.itxtW * 30
 
-		objMsgLabel = objLibTK.Label(objWindow, font=(self.arrFont[0]), text=strMsg, justify="left", fg=colourFg,  bg=colourBg, wraplength=iMsglbW)
+		objMsgLabel = objLibTK.Label(objWindow, text=strMsg, justify="left", fg=colourFg,  bg=colourBg, wraplength=iMsglbW)
 		iMsglbW = objMsgLabel.winfo_reqwidth()
 		iMsglbH = objMsgLabel.winfo_reqheight()
 		if iMsglbH < self.iImgWH:
@@ -92,10 +78,16 @@ class clMessageBox:
 
 		# ------------------------- Image -------------------------
 		iImgY = iMsglbY + int(iMsglbH / 2) - int(self.iImgWH / 2)
-		objImg = self.dictImages[strMBType]
-		if objImg is not None:
-			self.objCanvas.CreateCanvas(objWindow, 5, iImgY, colourBg, objImg=objImg)
+
+		# Create images
+		if not self.bInitialised:
+			for strKey in self.dictFileNames:
+				strPath = objLibOSPathJoin(self.strImgPath, self.dictFileNames[strKey])
+				self.objCanvas.CreateCanvasToFitImage(objWindow, strPath, 5, iImgY, colourBg, self.iImgWH, self.iImgWH, strKey)
+			# End of for loop
+			self.objCanvas.ChangeImageVisibility()
 		# End of if
+		self.objCanvas.ChangeImageVisibility([self.strMBType], "normal")
 
 		# ------------------------- Place headers -------------------------
 		iMsglbX = self.iImgWH + 15
@@ -120,6 +112,8 @@ class clMessageBox:
 			# End of if
 
 		# End of for loop
+
+		self.bInitialised = True
 
 		# ------------------------- Window -------------------------
 		iMessageBoxW = max(iHdrlbW, iMsglbW, ibtnX) + 10
@@ -162,25 +156,6 @@ class clMessageBox:
 		self.objParentWindow.wait_window(objWindow)
 		self.objParentWindow.focus_force()
 	# End of _CreateWindow()
-
-	def _Handlerbtn(self, strBtnOption):
-		self.strBtnOption = strBtnOption
-		self._Exit()
-	# End of _Handlerbtn()
-
-	def _HandlerbtnEsc(self):
-		if not self.bDisableEsc:
-			self.strBtnOption = "Escape"
-			self._Exit()
-		# End of if
-	# End of _HandlerbtnEsc()
-
-	def _HandlerWinClose(self):
-		if not self.bDisableWinClose:
-			self.strBtnOption = "Close"
-			self._Exit()
-		# End of if
-	# End of _HandlerWinClose()
 
 	def SetParentWindow(self, objParentWindow):
 		self.objParentWindow = objParentWindow
@@ -259,7 +234,27 @@ class clMessageBox:
 		objWindow.mainloop()
 	# End of StandAlone()
 
+	def _Handlerbtn(self, strBtnOption):
+		self.strBtnOption = strBtnOption
+		self._Exit()
+	# End of _Handlerbtn()
+
+	def _HandlerbtnEsc(self):
+		if not self.bDisableEsc:
+			self.strBtnOption = "Escape"
+			self._Exit()
+		# End of if
+	# End of _HandlerbtnEsc()
+
+	def _HandlerWinClose(self):
+		if not self.bDisableWinClose:
+			self.strBtnOption = "Close"
+			self._Exit()
+		# End of if
+	# End of _HandlerWinClose()
+
 	def _Exit(self):
+		self.objCanvas.ChangeImageVisibility([self.strMBType], "hidden")
 		self.objWindow.destroy()
 		self.objWindow.grab_release()
 		self.objWindow = None
