@@ -81,9 +81,15 @@ class clMessageBox:
 
 		# Create images
 		if not self.bInitialised:
+			bCanvasCreated = False
 			for strKey in self.dictFileNames:
 				strPath = objLibOSPathJoin(self.strImgPath, self.dictFileNames[strKey])
-				self.objCanvas.CreateCanvasToFitImage(objWindow, strPath, 5, iImgY, colourBg, self.iImgWH, self.iImgWH, strKey)
+				if not bCanvasCreated:
+					self.objCanvas.CreateCanvasToFitImage(objWindow, strPath, 5, iImgY, colourBg, self.iImgWH, self.iImgWH, strKey)
+					bCanvasCreated = True
+				else:
+					self.objCanvas.AddImage(strPath, 0, 0, self.iImgWH, self.iImgWH, strKey)
+				# End of if
 			# End of for loop
 			self.objCanvas.ChangeImageVisibility()
 		# End of if
