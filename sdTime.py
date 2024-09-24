@@ -1,6 +1,6 @@
 #
 # Started	: 12-Sep-2024
-# Completed	: 12-Sep-2024
+# Completed	: 24-Sep-2024
 #
 
 from os.path import join as objLibPathJoin
@@ -144,11 +144,9 @@ class clTime:
 			objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
 
 			strImgPath = objLibPathJoin(self.dictImage["Path"], self.dictImage["File"])
-			objCanvas.CreateImage(strImgPath, iImgW, iImgH)
-			dictDim = objCanvas.GetDimensions()
+			objImage = objCanvas.CreateImage(strImgPath, iImgW, iImgH)
 
-			self.dictWidgets["Image"] = dictDim["Image"]
-			objImage = dictDim["Image"]
+			self.dictWidgets["Image"] = objImage
 		# End of for loop
 
 		return objImage
@@ -214,7 +212,6 @@ class clTime:
 			strPeriod = strPickedTime[6:]
 			self._ToggleAMPM(strPeriod)
 		# End of if
-		print(strPickedTime)
 	# End of _CallbackTimePicker()
 
 	def _ToggleAMPM(self, strPeriod):
