@@ -54,10 +54,6 @@ class clDate:
 
 		self.ilbH = self.objCommon.GetFontInfo("TextHeight") + self.iHalfPad
 
-		# Classes
-		dictParams = { "objCommon": self.objCommon }
-		self.objCanvasGeneral = self.objCommon.GetLibrary("sdCanvas", **dictParams)
-
 		dictParams = { "objCommon": self.objCommon }
 		self.objMessageBox = self.objCommon.GetLibrary("sdMessageBox", **dictParams)
 		self.objMessageBox.SetParentWindow(objParentWindow)
@@ -161,7 +157,7 @@ class clDate:
 
 	def GetDate(self, strWhich="StartDate"):
 		# strWhich = "StartDate"|"EndDate"
-		# arrDate = ["01", "Jan", "2024"]
+		# arrDate = ["01", "Jan", "2024", dateObject]
 		arrDate = []
 
 		objWidget = self.dictWidgets[strWhich]["Day"]
