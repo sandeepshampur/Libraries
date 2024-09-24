@@ -2,8 +2,9 @@
 # Completed: 15-January-2022
 #
 # Enhancement : 13-Feb-2022 : Moved Window parameter from __init__() to Show() function
-# Enhancement : 13-Aug-2024 : 1. Added font, colours, and objCommon as parameters
+# Enhancement : 24-Sep-2024 : 1. Added font, colours, and objCommon as parameters
 #							  2. Add functions "SetColours()" and "SetWrapLength()"
+#							  3. Modified code to match changes in libraries
 #
 
 import os as objLibOS
@@ -153,9 +154,9 @@ class clNotification:
 		if iImgW != 0:
 			dictParams = { "objCommon": self.objCommon }
 			self.objCanvas = self.objCommon.GetLibrary("sdCanvas", **dictParams)
-			self.objCanvas.CreateImage(strImage, iImgW, -1)
-			dictDim = self.objCanvas.GetDimensions()
-			iImgH = dictDim["Height"]
+			self.objCanvas.CreateCanvasToFitImage(self, objWindow, strImage, iPad, iImgY, self.dictColours["colourBg"], iImgW)
+			arrCanvasDim = self.objCanvas.GetCanvasDimensions()
+			iImgH = arrCanvasDim[1]
 			iPad = 5
 		# End of if
 
@@ -177,9 +178,6 @@ class clNotification:
 		# Place widgets ---------------------------------------------------------------------
 		lbTitle.place(x=0, y=0, width=ilbTitleW, height=ilbTitleH)
 		lbMessage.place(x=ilbMsgX, y=iImgY, width=ilbMsgW, height=ilbMsgH)
-		if len(strImage) != 0:
-			self.objCanvas.CreateCanvas(objWindow, iPad, iImgY, self.dictColours["colourBg"])
-		# End of if
 
 		# Calculate window coordinates ------------------------------------------------
 		iWndW = ilbTitleW + 20
