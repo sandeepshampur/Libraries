@@ -10,10 +10,8 @@
 # Fix		  : 21-Jul-2024 : 1. Fixed code in CreateImage() where size was calculated wrongly when both width and height were -1
 #							  2. Added function ResizeImage()
 # Enhancement : 13-Aug-2024 : Added "objCommon" as parameter
+# Enhancement : 24-Sep-2024 : Revamped code
 
-#********************************************************************************************
-# Imports
-#********************************************************************************************
 from PIL import Image as objLibImage
 from PIL import ImageTk as objLibImageTk
 from re import sub as objLibRESub
@@ -25,238 +23,237 @@ class clCanvas:
 		self.objCommon = objCommon
 		self.objLoggerLog = objLoggerLog
 
-		self.objCanvas = None
-		self.objTooltip = None
-		self.objImg = None
-		self.iX = -1
-		self.iY = -1
-		self.iImgW = -1
-		self.iImgH = -1
-		self.imgID = -1
-		self.strTooltip = ""
-		self.tpBindArgs = ()
-		self.objCallback = None
-		self.dictPlaceInfo = None
+		self.dictInfo = {
+			"Bind": {
+				"Callback": None,
+				"Params": ()
+			},
+			"Canvas": {
+				"Height": -1,
+				"PlaceInfo": None,
+				"Width": -1
+			},
+			"ImageIDs": {},
+			"Tooltip": ""
+		}
+
+		self.dictWidgets = {
+			"Canvas": None,
+			"Images": {},
+			"Tooltip": None
+		}
 	# End of __init__()
-	
-	def AddImage(self, iImgX, iImgY, objImg=None, strTooltip=""):
-		if objImg is None:
-			self.imgID = self.objCanvas.create_image(iImgX, iImgY, anchor=objLibTK.NW, image=self.objImg)
-		else:
-			self.imgID = self.objCanvas.create_image(iImgX, iImgY, anchor=objLibTK.NW, image=objImg)
-		# End of if
 
-		if len(strTooltip) > 0:
-			self.strTooltip = objLibRESub(r"(\w)([A-Z])", r"\1 \2", strTooltip)
-		else:
-			self.strTooltip = ""
-		# End of if
+	def AddImage(self, strImgPath, iX=0, iY=0, iW=-1, iH=-1, strImgName="", bIgnoreDuplicate=True):
+		for x in range(1):
+			if strImgName in self.dictInfo["ImageIDs"]:
+				if bIgnoreDuplicate:
+					if self.objLoggerLog is not None:
+						self.objLoggerLog("Image name already exists. Ignoring as per flag.", strImgName)
+					# End of if
+					break
+				else:
+					if self.objLoggerLog is not None:
+						self.objLoggerLog("WARNING: Image name already exists. Image is replaced!", strImgName)
+					# End of if
+				# End of if
+			# End of if
 
-		if self.objTooltip is not None:
-			self.objTooltip.SetMessage(self.strTooltip)
-		# End of if
-		
-		return self.imgID
+			# Load image
+			objImg = self.CreateImage(strImgPath, iW, iH)
+
+			# Add image
+			objCanvas = self.dictWidgets["Canvas"]
+			iImgID = objCanvas.create_image(iX, iY, anchor=objLibTK.NW, image=objImg)
+
+			# Image name
+			if len(strImgName) == 0:
+				strImgName = "".join(["Img-", str(iImgID)])
+			# End of if
+
+			self.dictInfo["ImageIDs"][strImgName] = iImgID
+			self.dictWidgets["Images"][iImgID] = objImg
+		# End of for loop
 	# End of AddImage()
 
-	def Bind(self, strKey, objCallback=None, tpParam=()):
-		self.objCanvas.bind(strKey, lambda _: self.HandlerBind())
-		self.objCallback = objCallback
-		self.tpBindArgs = tpParam
+	def Bind(self, strKey, objCallback, tParam=(), bIgnoreEvent=False):
+		self.bIgnoreEvent = bIgnoreEvent
+		objCanvas = self.dictWidgets["Canvas"]
+		objCanvas.bind(strKey, self.HandlerBind)
+
+		self.dictInfo["Bind"]["Callback"] = objCallback
+		self.dictInfo["Bind"]["Params"] = tParam
 	# End of Bind()
 
-	def ChangeImage(self, objImg, strTooltip=""):
-		if self.objImg is None:
-			self.objCanvas.create_image(0, 0, anchor=objLibTK.NW, image=objImg)
+	def ChangeImageVisibility(self, arrImgNames=[], strState="hidden"):
+		'''
+		strState = "hidden"|"normal"
+		'''
+		# Get image IDs from image names
+		arrIDs = []
+		if len(arrImgNames) == 0:
+			arrIDs = list(self.dictInfo["ImageIDs"].values())
 		else:
-			self.objCanvas.itemconfig(1, image=objImg)
-		# End of if
-		self.iImgW = objImg.width()
-		self.iImgH = objImg.height()
-		self.objImg = objImg
-		
-		if len(strTooltip) > 0:
-			self.strTooltip = objLibRESub(r"(\w)([A-Z])", r"\1 \2", strTooltip)
-		else:
-			self.strTooltip = ""
-		# End of if
-
-		if self.objTooltip is not None:
-			self.objTooltip.SetMessage(self.strTooltip)
-		# End of if
-	# End of ChangeImage()
-
-	def ChangeTooltip(self, strTooltip=""):
-		self.strTooltip = strTooltip
-		if self.objTooltip is not None:
-			self.objTooltip.SetMessage(self.strTooltip)
-		# End of if
-	# End of AddTooltip()
-
-	def Clear(self, iImgID=-1):
-		if self.objCanvas is not None:
-			if iImgID == -1:
-				self.objCanvas.delete("all")
-			else:
-				self.objCanvas.delete(iImgID)
-			# End of if
-		# End of if
-		
-		self.objImg = None
-		self.strTooltip = ""
-		if self.objTooltip is not None:
-			self.objTooltip.SetMessage(self.strTooltip)
-		# End of if
-	# End of Clear()
-	
-	def CreateCanvas(self, objWindow, iX, iY, colourBg="white", bTooltip=False, strTooltip="", strTooltipPos="bottom-left", objImg=None, iW=-1, iH=-1):
-		self.iX = iX
-		self.iY = iY
-		if objImg is not None:
-			self.iImgW = objImg.width()
-			self.iImgH = objImg.height()
-			self.objImg = objImg
-		# End of if
-
-		if iW == -1:
-			iW = self.iImgW
-		# End of if
-		if iH == -1:
-			iH = self.iImgH
-		# End of if
-		self.objCanvas = objLibTK.Canvas(objWindow, width=iW, height=iH, highlightthickness=0, background=colourBg)
-		self.objCanvas.place(x=iX, y=iY)
-		self.dictPlaceInfo = self.objCanvas.place_info()
-		if self.objImg is not None:
-			self.imgID = self.objCanvas.create_image(0, 0, anchor=objLibTK.NW, image=self.objImg)
-		else:
-			self.imgID = -1
-		# End of if
-
-		if bTooltip:
-			if len(strTooltip) > 0:
-				self.strTooltip = objLibRESub(r"(\w)([A-Z])", r"\1 \2", strTooltip)
-			else:
-				self.strTooltip = ""
-			# End of if
-
-			dictParams = { "objWidget": self.objCanvas, "strMessage": self.strTooltip, "strPosition": strTooltipPos }
-			self.objTooltip = self.objCommon.GetLibrary("sdTooltip", **dictParams)
-		# End of if
-	# End of CreateCanvas()
-
-	def CreateImage(self, strImgPath="", iImgW=-1, iImgH=-1, objImg=None):
-		if objImg is None:
-			# Open image
-			objImg = objLibImage.open(strImgPath)
-
-			# Determine width and height preserving aspect ratio
-			for x in range(1):
-				if iImgW == -1 and iImgH == -1:
-					iImgW = objImg.size[0]
-					iImgH = objImg.size[1]
-					break
-				# End of if
-
-				if iImgW == -1:
-					iImgW = int(iImgH * objImg.size[0] / objImg.size[1])
-					break
-				# End of if
-
-				if iImgH == -1:
-					iImgH = int(iImgW * objImg.size[1] / objImg.size[0])
-					break
-				# End of if
+			for strImgName in arrImgNames:
+				arrIDs.append(self.dictInfo["ImageIDs"][strImgName])
 			# End of for loop
-			self.iImgW = iImgW
-			self.iImgH = iImgH
-
-			objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
-			self.objImg = objLibImageTk.PhotoImage(objImg)
-		else:
-			self.iImgW = objImg.width()
-			self.iImgH = objImg.height()
-			self.objImg = objImg
 		# End of if
-	# End of CreateImage()
 
-	def GetCoordinates(self, iID):
-		return self.objCanvas.coords(iID)
-	# End of GetCoordinates()
-	
-	def GetDimensions(self):
-		dictDim = {
-			"X": self.iX,			
-			"Y": self.iY,
-			"Image": self.objImg,
-			"Width": self.iImgW,			
-			"Height": self.iImgH,
-			"imgID": self.imgID,
-			"Tooltip": self.strTooltip
-		}
-		return dictDim
-	# End of GetDimensions()
+		# Hide images
+		objCanvas = self.dictWidgets["Canvas"]
+		for iImgID in arrIDs:
+			objCanvas.itemconfigure(iImgID, state=strState)
+		# End of for loop
+	# End of HideImage()
 
-	def HandlerBind(self):
-		if self.objCallback is not None:
-			objThread = objLibThreading.Thread(target=self.objCallback, args=self.tpBindArgs)
-			objThread.start()
-		# End of if
-	# End of HandlerBind()
-
-	def Hide(self):
-		self.objCanvas.place_forget()
-	# End of Forget()
-
-	def MoveImage(self, imgID, iX, iY):
-		self.objCanvas.move(imgID, iX, iY)
-	# End of MoveImage()
-
-	def ResizeImage(self, objImg=None, iImgW=-1, iImgH=-1):
+	def ConfigureTooltip(self, strMessage="", strPosition=""):
 		for x in range(1):
-			if iImgW == -1 and iImgH == -1:
-				if self.objLoggerLog is not None:
-					self.objLoggerLog("Warning: Both iImgW and iImgH are -1. Returning same image without resizing")
+			objTooltip = self.dictWidgets["Tooltip"]
+			if objTooltip is None:
+				# Create tooltip widget
+				objCanvas = self.dictWidgets["Canvas"]
+				if len(strPosition) == 0:
+					strPosition = "top-right"
 				# End of if
+
+				dictParams = { "objWidget": objCanvas, "strMessage": strMessage, "strPosition": strPosition }
+				objTooltip = self.objCommon.GetLibrary("sdTooltip", **dictParams)
+				self.dictWidgets["Tooltip"] = objTooltip
 				break
 			# End of if
 
-			if objImg == None:
-				objImg = self.objImg
+			objTooltip.SetMessage(strMessage)
+
+			if len(strPosition) == 0:
+				break
 			# End of if
 
-			try:
-				objImg.size[0]
-			except:
-				objImg = objLibImageTk.getimage(objImg)
-			# End of try / except
-
-			if iImgW == -1:
-				iImgW = int(iImgH * objImg.size[0] / objImg.size[1])
-			# End of if
-
-			if iImgH == -1:
-				iImgH = int(iImgW * objImg.size[1] / objImg.size[0])
-			# End of if
-
-			objImg = objImg.resize((iImgW, iImgH), objLibImage.LANCZOS)
-			# End of try / except
-
-			self.objImg = objLibImageTk.PhotoImage(objImg)
-			self.iImgW = iImgW
-			self.iImgH = iImgH
+			# Set tooltip posistion
+			objTooltip.SetTooltipPosition(strPosition)
 		# End of for loop
-	# End of ResizeImage()
+	# End of ConfigureTooltip()
+
+	def CreateCanvas(self, objWindow, iX, iY, iW, iH, colourBg="#d9d9d9"):
+		objCanvas = objLibTK.Canvas(objWindow, highlightthickness=0, background=colourBg)
+		objCanvas.place(x=iX, y=iY)
+		self.dictWidgets["Canvas"] = objCanvas
+		self.dictInfo["Canvas"]["PlaceInfo"] = objCanvas.place_info()
+		# This helps to resize canvas later
+		objCanvas.config(width=iW, height=iH)
+		self.dictInfo["Canvas"]["Width"] = iW
+		self.dictInfo["Canvas"]["Height"] = iH
+	# End of CreateCanvas()
+
+	def CreateCanvasToFitImage(self, objWindow, strImgPath, iCanvasX, iCanvasY, cCanvasBg="#d9d9d9", iImgW=-1, iImgH=-1, strImgName=""):
+		self.CreateCanvas(objWindow, iCanvasX, iCanvasY, 1, 1, cCanvasBg)
+		self.AddImage(strImgPath, iW=iImgW, iH=iImgH, strImgName=strImgName)
+
+		# Get image dimensions
+		objImage = self.dictWidgets["Images"][1]
+		iImgW = objImage.width()
+		iImgH = objImage.height()
+
+		# Resize canvas
+		self.dictWidgets["Canvas"].config(width=iImgW, height=iImgH)
+		self.dictInfo["Canvas"]["Width"] = iImgW
+		self.dictInfo["Canvas"]["Height"] = iImgH
+	# End of CreateCanvasToFitImage()
+
+	def CreateImage(self, strImgPath, iW=-1, iH=-1):
+		# Load image
+		objImg = objLibImage.open(strImgPath)
+		iOriginalImgW = objImg.size[0]
+		iOriginalImgH = objImg.size[1]
+
+		# Determine new dimentions as appropriate
+		for x in range(1):
+			if (iW == -1) and (iH == -1):
+				iNewImgW = iOriginalImgW
+				iNewImgH = iOriginalImgH
+				break
+			# End of if
+
+			iNewImgW = iW
+			iNewImgH = iH
+			if iW == -1:
+				iNewImgW = int(iH * iOriginalImgW / iOriginalImgH)
+			# End of if
+
+			if iH == -1:
+				iNewImgH = int(iW * iOriginalImgH / iOriginalImgW)
+			# End of if
+
+			# Resize image
+			objImg = objImg.resize((iNewImgW, iNewImgH), objLibImage.LANCZOS)
+		# End of for loop
+		objImg = objLibImageTk.PhotoImage(objImg)
+
+		return objImg
+	# End of GetImage()
+
+	def DeleteImages(self, arrImgNames=[]):
+		objCanvas = self.dictWidgets["Canvas"]
+		for x in range(1):
+			if len(arrImgNames) == 0:
+				objCanvas.delete("all")
+				self.dictWidgets["Images"].clear()
+				self.dictInfo["ImageIDs"].clear()
+				break
+			# End of if
+
+			# Delete images
+			for strImgName in arrImgNames:
+				iImgID = self.dictInfo["ImageIDs"][strImgName]
+				objCanvas.delete(iImgID)
+				self.dictWidgets["Images"].pop(iImgID)
+				self.dictInfo["ImageIDs"].pop(strImgName)
+			# End of for loop
+		# End of for loop
+	# End of DeleteImages()
+
+	def GetCanvasDimensions(self):
+		iW = self.dictInfo["Canvas"]["Width"]
+		iH = self.dictInfo["Canvas"]["Height"]
+
+		return [iW, iH]
+	# End of if
+
+	def HandlerBind(self, objEvent):
+		objCallback = self.dictInfo["Bind"]["Callback"]
+		tParam = self.dictInfo["Bind"]["Params"]
+
+		arrParam = list(tParam)
+		if not self.bIgnoreEvent:
+			arrParam.insert(0, objEvent)
+		# End of if
+
+		objCallback(*arrParam)
+	# End of HandlerBind()
+
+	def MoveImage(self, strImgName, iX, iY):
+		# Get image ID
+		iImgID = self.dictInfo["ImageIDs"][strImgName]
+
+		# Move image
+		objCanvas = self.dictWidgets["Canvas"]
+		objCanvas.move(iImgID, iX, iY)
+	# End of MoveImage()
 
 	def SetBackgroundColour(self, colourBg):
-		self.objCanvas.configure(bg=colourBg)
+		self.dictWidgets["Canvas"].config(background=colourBg)
 	# End of SetBackgroundColour()
 
-	def Show(self):
-		self.objCanvas.place(self.dictPlaceInfo)
-	# End of Display()
+	def SetState(self, strState):
+		strState = strState.lower()
+		match strState:
+			case "hide":
+				self.dictWidgets["Canvas"].place_forget()
+			# End of case
 
-	def SetItemState(self, iID, strState):
-		self.objCanvas.itemconfig(iID, state=strState)
-	# End of ClearItem()	
+			case "normal":
+				dictPlaceInfo = self.dictInfo["Canvas"]["PlaceInfo"]
+				self.dictWidgets["Canvas"].place(dictPlaceInfo)
+			# End of case
+		# End of match
+	# End of SetState()
 # End of class clCanvas
