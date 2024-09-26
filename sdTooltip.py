@@ -4,13 +4,15 @@
 # Fix : 04-Jan-2022 : Added code to close tooltip when it is set to null
 #
 # Fix 		  : 13-Jul-2024 : Added code to prevent repeated calls to create tooltip when both tooltip and widget overlap
-# Enhancement : 19-Sep-2024 : 1. Added function "ReplaceMessage()", "SetTooltipPosition()"
+# Enhancement : 26-Sep-2024 : 1. Added function "ReplaceMessage()", "SetTooltipPosition()"
 #							  2. Moved colours to dictionary
 #							  3. Added font
 #							  4. Added code to close tip when cursor enters tooltip window.
+#							  5. Moved tooltip window creation to thread
 #
 
 from re import sub as objRESub
+import threading as objLibThreading
 import tkinter as objLibTK
 
 class clTooltip:
@@ -27,36 +29,12 @@ class clTooltip:
 		self.IsShowing = False
 		self.lbMessage = None
 
-		# Create tooltip window
-		self.objToolTipWin = objLibTK.Toplevel(self.objWidget)
-		self.objToolTipWin.withdraw()
-		self.objToolTipWin.wm_overrideredirect(True)
-		self.objToolTipWin.attributes("-topmost", True)
-		objFrame = objLibTK.Frame(self.objToolTipWin, borderwidth=0, background=self.dictColours["colourBg"])
-		self.lbMessage = objLibTK.Label(objFrame, text=strMessage, justify=objLibTK.LEFT, background=self.dictColours["colourBg"],
-										foreground=self.dictColours["colourFg"], relief=objLibTK.SOLID, borderwidth=0, wraplength=250, font=self.arrFont)
-		self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
-		objFrame.grid()
-		self.lbMessage.update()
-
-		# Tooltip Label size
-		self.ilbTTW = self.lbMessage.winfo_width() + 8
-		self.ilbTTH = self.lbMessage.winfo_height() + 8
-
-		# Widget size
-		self.objWidget.update()
-		self.iWidgetW = self.objWidget.winfo_width()
-		self.iWidgetH = self.objWidget.winfo_height()
-
-		# Bind to mouse
-		self.objWidget.bind("<Enter>", self.ShowTip)
-		self.objWidget.bind("<Leave>", self.CloseTip)
-
-		self.objToolTipWin.bind("<Enter>", self.CloseTip)
-
 		# Get screen dimensions
 		self.iScrW = self.objWidget.winfo_screenwidth()
 		self.iScrH = self.objWidget.winfo_screenheight()
+
+		# Create tooltip window
+		objLibThreading.Thread(target=self._CreateTTWindow(), daemon=False).start()
 	# End of __init__()
 
 	def AppendMessage(self, strMessage=""):
@@ -178,6 +156,10 @@ class clTooltip:
 
 	def ShowTip(self, objEvent=None):
 		for x in range(1):
+			if self.objToolTipWin is None:
+				break
+			# End of if
+
 			if len(self.strMessage) == 0:
 				break
 			# End of if
@@ -185,8 +167,6 @@ class clTooltip:
 			if self.IsShowing:
 				break
 			# End of if
-
-			print("Tooltip", objEvent)
 
 			# Get widget position
 			self.objWidget.update()
@@ -262,4 +242,34 @@ class clTooltip:
 			self.objToolTipWin.after(self.iTimeout, self.CloseTip)
 		# End of for loop
 	# End of ShowTip()
+
+	def _CreateTTWindow(self):
+		# Create tooltip window
+		objToolTipWin = objLibTK.Toplevel(self.objWidget)
+		objToolTipWin.withdraw()
+		objToolTipWin.wm_overrideredirect(True)
+		objToolTipWin.attributes("-topmost", True)
+		objFrame = objLibTK.Frame(objToolTipWin, borderwidth=0, background=self.dictColours["colourBg"])
+		self.lbMessage = objLibTK.Label(objFrame, text=self.strMessage, justify=objLibTK.LEFT, background=self.dictColours["colourBg"],
+										foreground=self.dictColours["colourFg"], relief=objLibTK.SOLID, borderwidth=0, wraplength=250, font=self.arrFont)
+		self.lbMessage.grid(padx=(5, 5), pady=(3, 3), sticky=objLibTK.NSEW)
+		objFrame.grid()
+
+		# Tooltip Label size
+		self.lbMessage.update()
+		self.ilbTTW = self.lbMessage.winfo_reqwidth() + 8
+		self.ilbTTH = self.lbMessage.winfo_reqheight() + 8
+
+		# Widget size
+		self.objWidget.update()
+		self.iWidgetW = self.objWidget.winfo_reqwidth()
+		self.iWidgetH = self.objWidget.winfo_reqheight()
+
+		# Bindings
+		self.objWidget.bind("<Enter>", self.ShowTip)
+		self.objWidget.bind("<Leave>", self.CloseTip)
+		objToolTipWin.bind("<Enter>", self.CloseTip)
+
+		self.objToolTipWin = objToolTipWin
+	# End of _CreateTTWindow()
 # End of class clTooltip
