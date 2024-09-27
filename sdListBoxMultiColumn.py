@@ -16,7 +16,7 @@
 #							  2. Added function "Move()"
 #							  3. Moved colours to dictionary
 # Fix		  : 15-Sep-2024 : Removed hardcoded value in "Enable()"
-# Enhancement : 15-Sep-2024 : Added sort function "_sort_by_datetime()"
+# Enhancement : 24-Sep-2024 : Added functions "_sort_by_datetime()" and "UpdateRow()"
 #
 
 import datetime as objDateTime
@@ -289,7 +289,19 @@ class clListBoxMultiColumn:
 		self.tvRecords.SortByFunctionName(strSortType, strColumn, reverse)
 	# End of Sort()
 	
-	def UpdateSelectedItem(self, arrItem):	
+	def UpdateRow(self, iRow, arrItem):
+		# iRow is zero based
+		self.FormatDate(arrItem)
+		arrIIDs = self.tvRecords.get_children("")
+
+		self.tvRecords.item(arrIIDs[iRow], values=tuple(arrItem))
+
+		if self.iColumnToSort != -1:
+			self.Sort(self.dictTvHdrAttrib["sortType"][self.iColumnToSort], self.dictTvHdrAttrib["header"][self.iColumnToSort], self.bSortDescending)
+		# End of if
+	# End of UpdateRow()
+
+	def UpdateSelectedItem(self, arrItem):
 		self.FormatDate(arrItem)
 		
 		selected = self.tvRecords.focus()
