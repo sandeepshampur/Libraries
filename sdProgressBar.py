@@ -5,6 +5,7 @@
 # Enhancement : 01-Oct-2024 : Revamped logic
 #
 
+import uuid as objLibUUID
 import tkinter as objLibTK
 from tkinter import ttk as objLibTTK
 
@@ -33,16 +34,18 @@ class clProgressBar:
 		iLabelSize = int(iH * 0.55)
 		tLabelFont = (self.arrFont[0], iLabelSize, self.arrFont[2])
 
-		self.objProgressBarStyle = objLibTTK.Style(objParentWindow)
-		self.objProgressBarStyle.layout("text.Horizontal.TProgressbar",
+		self.objStyle = objLibTTK.Style(objParentWindow)
+		self.objStyle.layout("textProgressBar",
 						  [("Horizontal.Progressbar.trough", {"children": [("Horizontal.Progressbar.pbar", {"side": "left", "sticky": "ns"})],
 									"sticky": "nswe"}), ("Horizontal.Progressbar.label", {"sticky": "nswe"})])
 
-		self.objProgressBarStyle.configure("text.Horizontal.TProgressbar", text="0%", anchor="center", font=tLabelFont, foreground=self.dictColours["cLabel"],
+		self.objStyle.configure("textProgressBar", text="0%", anchor="center", font=tLabelFont, foreground=self.dictColours["cLabel"],
 				troughcolor=self.dictColours["cTrough"], bordercolor=self.dictColours["cBorder"],
 				background=self.dictColours["cBar"], lightcolor=self.dictColours["cBar"], darkcolor=self.dictColours["cBar"])
 
-		self.objProgressBar = objLibTTK.Progressbar(objWidget, style="text.Horizontal.TProgressbar", maximum=100.01)
+		self.strStyleName = "".join([str(objLibUUID.uuid4()), ".textProgressBar"])
+		self.objStyle.configure(self.strStyleName, "textProgressbar")
+		self.objProgressBar = objLibTTK.Progressbar(objWidget, style=self.strStyleName, maximum=100.01)
 		self.objProgressBar.place(x=iX, y=iY, width=iW, height=iH)
 	# End of Display()
 
@@ -101,6 +104,6 @@ class clProgressBar:
 	def _UpdateProgressBar(self, iStepValue, iLabelValue):
 		self.objProgressBar.step(iStepValue)
 		strLabelValue = "".join([str(iLabelValue), "%"])
-		self.objProgressBarStyle.configure("text.Horizontal.TProgressbar", text=strLabelValue)
+		self.objStyle.configure(self.strStyleName, text=strLabelValue)
 	# End of _UpdateProgressBar()
 # End of class clProgressBar
