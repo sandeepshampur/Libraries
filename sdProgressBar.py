@@ -99,8 +99,6 @@ class clProgressBar:
 	# End of SetProgress()
 
 	def _UpdateProgressBar(self, iStepValue, iLabelValue):
-		print("self.iProgress", self.iProgress, "iStepValue", iStepValue, "iLabelValue", iLabelValue)
-
 		self.objProgressBar.step(iStepValue)
 		strLabelValue = "".join([str(iLabelValue), "%"])
 		self.objProgressBarStyle.configure("text.Horizontal.TProgressbar", text=strLabelValue)
