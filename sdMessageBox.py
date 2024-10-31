@@ -16,9 +16,9 @@
 #							  3. Added code to customise colours during call to "__init__()"
 #							  4. Added objCommon parameter
 #							  5. Modified code to match changes in libraries
+# Fix		  : 17-Oct-2024 : Added "objWindow.wait_visibility()" before "grab_set" to prevent freezing of window
 #
 
-import os as objLibOS
 from os.path import join as objLibOSPathJoin
 import tkinter as objLibTK
 from tkinter import font as objLibTkFont
@@ -46,7 +46,6 @@ class clMessageBox:
 		self.strMBType = strMBType
 
 		objWindow = objLibTK.Toplevel(self.dictInfo["ParentWindow"])
-		objWindow.grab_set()
 		objWindow.withdraw()
 		objWindow.configure(bg=colourBg)
 		self.objWindow = objWindow
@@ -104,7 +103,7 @@ class clMessageBox:
 
 		# ------------------------- Window -------------------------
 		iMessageBoxW = max(iHdrlbW, iMsglbW, ibtnX) + 10
-		objWindow.wm_overrideredirect(True)
+		objWindow.wm_attributes('-type', 'splash')
 		objWindow.bind("<Escape>", lambda _: self._HandlerbtnEsc())
 		objWindow.protocol("WM_DELETE_WINDOW", self._HandlerWinClose)
 
@@ -138,8 +137,10 @@ class clMessageBox:
 
 		strWinDim = "".join([str(iMessageBoxW), "x", str(iMessageBoxH), "+", str(iX), "+", str(iY)])
 		objWindow.geometry(strWinDim)
-		objWindow.focus_force()
 		objWindow.deiconify()
+		objWindow.wait_visibility()
+		objWindow.focus_force()
+		objWindow.grab_set()
 
 		objParentWindow.wait_window(objWindow)
 		objParentWindow.focus_force()
@@ -246,8 +247,8 @@ class clMessageBox:
 	# End of _HandlerWinClose()
 
 	def _Exit(self):
-		self.objWindow.destroy()
 		self.objWindow.grab_release()
+		self.objWindow.destroy()
 		self.objWindow = None
 	# End of Exit()
 # End of class clMessageBox
