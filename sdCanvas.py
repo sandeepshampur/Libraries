@@ -10,12 +10,14 @@
 # Fix		  : 21-Jul-2024 : 1. Fixed code in CreateImage() where size was calculated wrongly when both width and height were -1
 #							  2. Added function ResizeImage()
 # Enhancement : 13-Aug-2024 : Added "objCommon" as parameter
-# Enhancement : 24-Sep-2024 : Revamped code
+# Enhancement : 25-Sep-2024 : 1. Revamped code
+#							  2. Added function "IsImagePresent()"
+# Fix		  : 23-Oct-2024 : Fixed code in function "MoveImage()" to calculate relative coordinates
+#
 
 from PIL import Image as objLibImage
 from PIL import ImageTk as objLibImageTk
 from re import sub as objLibRESub
-import threading as objLibThreading
 import tkinter as objLibTK
 
 class clCanvas:
@@ -36,12 +38,22 @@ class clCanvas:
 			"ImageIDs": {},
 			"Tooltip": ""
 		}
+		'''
+		self.dictInfo["ImageIDs"] = {
+			<"ImageName">: <ImageID>
+		}
+		'''
 
 		self.dictWidgets = {
 			"Canvas": None,
 			"Images": {},
 			"Tooltip": None
 		}
+		'''
+		self.dictWidgets["Images"] = {
+			<ImageID>: <objImage>
+		}
+		'''
 	# End of __init__()
 
 	def AddImage(self, strImgPath, iX=0, iY=0, iW=-1, iH=-1, strImgName="", bIgnoreDuplicate=True):
@@ -79,7 +91,7 @@ class clCanvas:
 	def Bind(self, strKey, objCallback, tParam=(), bIgnoreEvent=False):
 		self.bIgnoreEvent = bIgnoreEvent
 		objCanvas = self.dictWidgets["Canvas"]
-		objCanvas.bind(strKey, self.HandlerBind)
+		objCanvas.bind(strKey, self._HandlerBind)
 
 		self.dictInfo["Bind"]["Callback"] = objCallback
 		self.dictInfo["Bind"]["Params"] = tParam
@@ -111,12 +123,11 @@ class clCanvas:
 			objTooltip = self.dictWidgets["Tooltip"]
 			if objTooltip is None:
 				# Create tooltip widget
-				objCanvas = self.dictWidgets["Canvas"]
 				if len(strPosition) == 0:
 					strPosition = "top-right"
 				# End of if
 
-				dictParams = { "objWidget": objCanvas, "strMessage": strMessage, "strPosition": strPosition }
+				dictParams = { "objWidget": self.dictWidgets["Canvas"], "strMessage": strMessage, "strPosition": strPosition }
 				objTooltip = self.objCommon.GetLibrary("sdTooltip", **dictParams)
 				self.dictWidgets["Tooltip"] = objTooltip
 				break
@@ -218,25 +229,30 @@ class clCanvas:
 		return [iW, iH]
 	# End of if
 
-	def HandlerBind(self, objEvent):
-		objCallback = self.dictInfo["Bind"]["Callback"]
-		tParam = self.dictInfo["Bind"]["Params"]
-
-		arrParam = list(tParam)
-		if not self.bIgnoreEvent:
-			arrParam.insert(0, objEvent)
+	def IsImagePresent(self, strImageName):
+		if strImageName in self.dictInfo["ImageIDs"]:
+			bFlag = True
+		else:
+			bFlag = False
 		# End of if
 
-		objCallback(*arrParam)
-	# End of HandlerBind()
+		return bFlag
+	# End of IsImagePresent()
 
 	def MoveImage(self, strImgName, iX, iY):
 		# Get image ID
 		iImgID = self.dictInfo["ImageIDs"][strImgName]
 
-		# Move image
+		# Get current image coordinates
 		objCanvas = self.dictWidgets["Canvas"]
-		objCanvas.move(iImgID, iX, iY)
+		arrImgCoord = objCanvas.bbox(iImgID)
+
+		# Calculate relative coordinates
+		iRelativeX = iX - arrImgCoord[0]
+		iRelativeY = iY - arrImgCoord[1]
+
+		# Move image
+		objCanvas.move(iImgID, iRelativeX, iRelativeY)
 	# End of MoveImage()
 
 	def SetBackgroundColour(self, colourBg):
@@ -256,4 +272,16 @@ class clCanvas:
 			# End of case
 		# End of match
 	# End of SetState()
+
+	def _HandlerBind(self, objEvent):
+		objCallback = self.dictInfo["Bind"]["Callback"]
+		tParam = self.dictInfo["Bind"]["Params"]
+
+		arrParam = list(tParam)
+		if not self.bIgnoreEvent:
+			arrParam.insert(0, objEvent)
+		# End of if
+
+		objCallback(*arrParam)
+	# End of _HandlerBind()
 # End of class clCanvas
