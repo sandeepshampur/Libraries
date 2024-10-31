@@ -9,6 +9,7 @@
 #							  3. Added font
 #							  4. Added code to close tip when cursor enters tooltip window.
 #							  5. Moved tooltip window creation to thread
+# Fix 		  : 31-Oct-2024 : Fixed incorrect tooltip placement
 #
 
 from re import sub as objRESub
@@ -33,8 +34,10 @@ class clTooltip:
 		self.iScrW = self.objWidget.winfo_screenwidth()
 		self.iScrH = self.objWidget.winfo_screenheight()
 
+		self.iPad = 8
+
 		# Create tooltip window
-		objLibThreading.Thread(target=self._CreateTTWindow, daemon=True).start()
+		objLibThreading.Thread(target=self._CreateWindow, daemon=True).start()
 	# End of __init__()
 
 	def AppendMessage(self, strMessage=""):
@@ -58,8 +61,8 @@ class clTooltip:
 			if self.lbMessage is not None:
 				self.lbMessage["text"] = self.strMessage
 				self.lbMessage.update()
-				self.ilbTTW = self.lbMessage.winfo_width() + 8
-				self.ilbTTH = self.lbMessage.winfo_height() + 8
+				self.ilbTTW = self.lbMessage.winfo_width() + self.iPad
+				self.ilbTTH = self.lbMessage.winfo_height() + self.iPad
 			# End of if
 		# End of for loop
 	# End of AppendMessage()
@@ -101,8 +104,8 @@ class clTooltip:
 			if self.lbMessage is not None:
 				self.lbMessage["text"] = self.strMessage
 				self.lbMessage.update()
-				self.ilbTTW = self.lbMessage.winfo_width() + 8
-				self.ilbTTH = self.lbMessage.winfo_height() + 8
+				self.ilbTTW = self.lbMessage.winfo_width() + self.iPad
+				self.ilbTTH = self.lbMessage.winfo_height() + self.iPad
 			# End of if
 		# End of for loop
 	# End of RemoveMessage()
@@ -126,8 +129,8 @@ class clTooltip:
 			if self.lbMessage is not None:
 				self.lbMessage["text"] = self.strMessage
 				self.lbMessage.update()
-				self.ilbTTW = self.lbMessage.winfo_width() + 8
-				self.ilbTTH = self.lbMessage.winfo_height() + 8
+				self.ilbTTW = self.lbMessage.winfo_width() + self.iPad
+				self.ilbTTH = self.lbMessage.winfo_height() + self.iPad
 			# End of if
 		# End of for loop
 	# End of ReplaceMessage()
@@ -144,8 +147,8 @@ class clTooltip:
 			if self.lbMessage is not None:
 				self.lbMessage["text"] = self.strMessage
 				self.lbMessage.update()
-				self.ilbTTW = self.lbMessage.winfo_width() + 8
-				self.ilbTTH = self.lbMessage.winfo_height() + 8
+				self.ilbTTW = self.lbMessage.winfo_width() + self.iPad
+				self.ilbTTH = self.lbMessage.winfo_height() + self.iPad
 			# End of if
 		# End of for loop
 	# End of SetMessage()
@@ -170,66 +173,75 @@ class clTooltip:
 
 			# Get widget position
 			self.objWidget.update()
-			iTTX = self.objWidget.winfo_rootx()
-			iTTY = self.objWidget.winfo_rooty()
+			iWidgetX = self.objWidget.winfo_rootx()
+			iWidgetY = self.objWidget.winfo_rooty()
 
 			# Calculate tooltip position
 			match self.strTTPosition:
 				case "top-left":
-					iTTY -= self.ilbTTH
+					iTTX = iWidgetX
+					iTTY = iWidgetY - self.ilbTTH
 
-					# Prevent tool tip from going out of screen
-					if iTTY < 0:
-						iTTY += self.ilbTTH + self.iWidgetH
-					# End of if
-
+					# Prevent tool tip from going out of right of screen
 					if (iTTX + self.ilbTTW) > self.iScrW:
 						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
+					# End of if
+
+					# Prevent tool tip from going out of top of screen
+					if iTTY < 0:
+						# Move tool tip to bottom
+						iTTY = iWidgetY + self.iWidgetH - self.iPad
 					# End of if
 				# End of case
 
 				case "top-right":
-					iTTX += self.iWidgetW
+					iTTX = iWidgetX + self.iWidgetW
+					iTTY = iWidgetY
 
-					# Prevent tool tip from going out of screen
+					# Prevent tool tip from going out of right of screen
 					if (iTTX + self.ilbTTW) > self.iScrW:
 						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
-						if (iTTY + self.ilbTTH) > self.iScrH:
-							iTTY -= self.ilbTTH
-						else:
-							iTTY += self.iWidgetH
-						# End of if
-					else:
-						if  (iTTY + self.ilbTTH) > self.iScrH:
-							iTTY -= self.ilbTTH
-						else:
-							iTTY += self.iWidgetH
-						# End of if
+
+						# Move tool tip to bottom to prevent it from overlapping the widget
+						iTTY += self.iWidgetH
+					# End of if
+
+					# Prevent tool tip from going out of bottom of screen
+					if (iTTY + self.ilbTTH) > self.iScrH:
+						# Move tool tip to the top
+						iTTY = iWidgetY - self.ilbTTH
 					# End of if
 				# End of case
 
 				case "bottom-left":
-					iTTY += self.iWidgetH
+					iTTX = iWidgetX
+					iTTY = iWidgetY + self.iWidgetH
 
-					# Prevent tool tip from going out of screen
-					if (iTTY + self.ilbTTH) > self.iScrH:
-						iTTY -= (self.iWidgetH + self.ilbTTH)
-					# End of if
+					# Prevent tool tip from going out of right of screen
 					if (iTTX + self.ilbTTW) > self.iScrW:
 						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
+					# End of if
+
+					# Prevent tool tip from going out of bottom of screen
+					if (iTTY + self.ilbTTH) > self.iScrH:
+						# Move tool tip to the top
+						iTTY = iWidgetY - self.ilbTTH
 					# End of if
 				# End of case
 
 				case "bottom-right":
-					iTTX += self.iWidgetW
-					iTTY += self.iWidgetH
+					iTTX = iWidgetX + self.iWidgetW
+					iTTY = iWidgetY + self.iWidgetH
 
-					# Prevent tool tip from going out of screen
+					# Prevent tool tip from going out of right of screen
 					if (iTTX + self.ilbTTW) > self.iScrW:
 						iTTX -= (iTTX + self.ilbTTW - self.iScrW)
 					# End of if
+
+					# Prevent tool tip from going out of bottom of screen
 					if (iTTY + self.ilbTTH) > self.iScrH:
-						iTTY -= (self.iWidgetH + self.ilbTTH)
+						# Move tool tip to the top
+						iTTY = iWidgetY - self.ilbTTH
 					# End of if
 				# End of case
 			# End of match
@@ -243,11 +255,10 @@ class clTooltip:
 		# End of for loop
 	# End of ShowTip()
 
-	def _CreateTTWindow(self):
+	def _CreateWindow(self):
 		# Create tooltip window
 		objToolTipWin = objLibTK.Toplevel(self.objWidget)
 		objToolTipWin.withdraw()
-		objToolTipWin.wm_attributes('-type', 'splash')
 		objToolTipWin.attributes("-topmost", True)
 		objFrame = objLibTK.Frame(objToolTipWin, borderwidth=0, background=self.dictColours["colourBg"])
 		self.lbMessage = objLibTK.Label(objFrame, text=self.strMessage, justify=objLibTK.LEFT, background=self.dictColours["colourBg"],
@@ -257,19 +268,21 @@ class clTooltip:
 
 		# Tooltip Label size
 		self.lbMessage.update()
-		self.ilbTTW = self.lbMessage.winfo_reqwidth() + 8
-		self.ilbTTH = self.lbMessage.winfo_reqheight() + 8
+		self.ilbTTW = self.lbMessage.winfo_reqwidth() + self.iPad
+		self.ilbTTH = self.lbMessage.winfo_reqheight() + self.iPad
 
 		# Widget size
 		self.objWidget.update()
-		self.iWidgetW = self.objWidget.winfo_reqwidth()
-		self.iWidgetH = self.objWidget.winfo_reqheight()
+		self.iWidgetW = self.objWidget.winfo_width()
+		self.iWidgetH = self.objWidget.winfo_height()
 
 		# Bindings
 		self.objWidget.bind("<Enter>", self.ShowTip)
 		self.objWidget.bind("<Leave>", self.CloseTip)
 		objToolTipWin.bind("<Enter>", self.CloseTip)
 
+		objToolTipWin.overrideredirect(True)
+
 		self.objToolTipWin = objToolTipWin
-	# End of _CreateTTWindow()
+	# End of _CreateWindow()
 # End of class clTooltip
