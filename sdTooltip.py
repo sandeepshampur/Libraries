@@ -34,7 +34,7 @@ class clTooltip:
 		self.iScrH = self.objWidget.winfo_screenheight()
 
 		# Create tooltip window
-		objLibThreading.Thread(target=self._CreateTTWindow(), daemon=False).start()
+		objLibThreading.Thread(target=self._CreateTTWindow, daemon=True).start()
 	# End of __init__()
 
 	def AppendMessage(self, strMessage=""):
@@ -247,7 +247,7 @@ class clTooltip:
 		# Create tooltip window
 		objToolTipWin = objLibTK.Toplevel(self.objWidget)
 		objToolTipWin.withdraw()
-		objToolTipWin.wm_overrideredirect(True)
+		objToolTipWin.wm_attributes('-type', 'splash')
 		objToolTipWin.attributes("-topmost", True)
 		objFrame = objLibTK.Frame(objToolTipWin, borderwidth=0, background=self.dictColours["colourBg"])
 		self.lbMessage = objLibTK.Label(objFrame, text=self.strMessage, justify=objLibTK.LEFT, background=self.dictColours["colourBg"],
