@@ -103,7 +103,7 @@ class clMessageBox:
 
 		# ------------------------- Window -------------------------
 		iMessageBoxW = max(iHdrlbW, iMsglbW, ibtnX) + 10
-		objWindow.wm_attributes('-type', 'splash')
+		objWindow.wm_attributes("-type", "splash", "-topmost", True)
 		objWindow.bind("<Escape>", lambda _: self._HandlerbtnEsc())
 		objWindow.protocol("WM_DELETE_WINDOW", self._HandlerWinClose)
 
