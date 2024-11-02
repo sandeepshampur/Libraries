@@ -17,6 +17,8 @@
 #							  4. Added objCommon parameter
 #							  5. Modified code to match changes in libraries
 # Fix		  : 17-Oct-2024 : Added "objWindow.wait_visibility()" before "grab_set" to prevent freezing of window
+# Enhancement : 02-Nov-2024 : 1. Added mouse button click binding to get focus to window
+#							  2. Added "overrideredirect" and removed "splash" window
 #
 
 from os.path import join as objLibOSPathJoin
@@ -105,6 +107,7 @@ class clMessageBox:
 		iMessageBoxW = max(iHdrlbW, iMsglbW, ibtnX) + 10
 		objWindow.overrideredirect(True)
 		objWindow.bind("<Escape>", lambda _: self._HandlerbtnEsc())
+		objWindow.bind("<Button-1>", objWindow.focus_force())
 		objWindow.protocol("WM_DELETE_WINDOW", self._HandlerWinClose)
 
 		iMessageBoxH = ibtnY + ibtnH + 20
