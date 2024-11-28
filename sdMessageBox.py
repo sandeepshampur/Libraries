@@ -19,7 +19,9 @@
 # Fix		  : 17-Oct-2024 : Added "objWindow.wait_visibility()" before "grab_set" to prevent freezing of window
 # Enhancement : 02-Nov-2024 : 1. Added mouse button click binding to get focus to window
 #							  2. Added "overrideredirect" and removed "splash" window
+# Fix		  : 28-Nov-2024 : Added missing code in "StandAlone()" to initialise font information
 #
+
 
 from os.path import join as objLibOSPathJoin
 import tkinter as objLibTK
@@ -203,6 +205,10 @@ class clMessageBox:
 		strWinDim = "".join(["100x100+", str(iScrW), "+", str(iScrH)])
 		objWindow.geometry(strWinDim)
 		objWindow.deiconify()
+
+		self.itxtH = self.objCommon.GetFontInfo("TextHeight")
+		self.itxtW = self.objCommon.GetFontInfo("TextWidth")
+		self.iImgWH = self.itxtH * 3
 
 		objWindow.resizable(False, False)
 		objWindow.bind("<Escape>", lambda _: objWindow.destroy)
