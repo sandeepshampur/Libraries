@@ -27,6 +27,27 @@ from tkinter import ttk as objTTK
 
 class clListBoxMultiColumn:
 	def __init__(self, dictTvHdrAttrib, arrDefaultRecords, iSortByColumn, arrFont, dictColours, objLoggerLog):
+		'''
+		Structure of dictTvHdrAttrib
+		dictTvHdrAttrib = {
+			"header": [<strHeaderName>, ...],
+			"width": [50, ...],
+			"sortType": ["datetime", ...],
+			"alignment": ["center", "center", "w"]
+		}
+
+		sortType : Refer class clListBoxMultiColumnSort below
+		alignment : "nw", "n", "ne", "e", "se", "s", "sw", "w", "center"
+
+		Structure of arrDefaultRecords
+		arrDefaultRecords = [
+			[<column1>, ...]
+			...
+		]
+
+		Refer class clListBoxMultiColumnSort below for format of column values
+
+		'''
 		self.dictTvHdrAttrib = dictTvHdrAttrib
 		self.arrDefaultRecords = arrDefaultRecords
 		self.iColumnToSort = iSortByColumn
